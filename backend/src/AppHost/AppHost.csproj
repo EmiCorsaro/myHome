@@ -1,0 +1,24 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.4.6">
+
+  <!--
+    Development orchestrator. Starts PostgreSQL in a container and the API with a single
+    command, and serves the Aspire dashboard with traces, logs and metrics.
+
+    Nobody references this project. It is only run, with "dotnet run" from its folder.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>3f4b578e-0463-4678-add3-33e6bdf64fbb</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Api\Api.csproj" />
+  </ItemGroup>
+
+</Project>

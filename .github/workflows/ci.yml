@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore backend/MyHome.slnx
+
+      # TreatWarningsAsErrors is on, so this step also fails on NU1903: a package with a known
+      # advisory, direct or transitive, breaks the build. Dependency scanning is not a separate
+      # step here — it is the compilation.
+      - name: Build
+        run: dotnet build backend/MyHome.slnx --no-restore --configuration Release
+
+      - name: Known vulnerabilities
+        run: dotnet list backend/MyHome.slnx package --vulnerable --include-transitive
+
+      # Includes the architecture tests: module boundaries, no EF Core in the HTTP layer, no
+      # ASP.NET in the domain.
+      - name: Test
+        run: dotnet test backend/MyHome.slnx --no-build --configuration Release
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Types
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Known vulnerabilities
+        run: npm audit --audit-level=high

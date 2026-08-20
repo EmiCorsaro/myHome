@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Api/Api.csproj" />
+    <Project Path="src/AppHost/AppHost.csproj" />
+    <Project Path="src/Modules.Ledger/Modules.Ledger.csproj" />
+    <Project Path="src/Modules.Shared/Modules.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Architecture.Tests/Architecture.Tests.csproj" />
+    <Project Path="tests/Ledger.Tests/Ledger.Tests.csproj" />
+    <Project Path="tests/Shared.Tests/Shared.Tests.csproj" />
+  </Folder>
+</Solution>

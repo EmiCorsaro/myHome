@@ -1,0 +1,37 @@
+{
+  // Formatting is not a matter of taste here: Prettier runs in CI and the build fails if a file
+  // is not formatted. Formatting on save means nobody ever hits that failure.
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  "[csharp]": {
+    "editor.defaultFormatter": "ms-dotnettools.csharp"
+  },
+
+  // Tailwind v4 has no config file: the theme lives in CSS. The extension needs to be told
+  // where, or the token names will not autocomplete.
+  "tailwindCSS.experimental.configFile": "packages/ui/src/tokens.css",
+  "tailwindCSS.classFunctions": ["cn"],
+
+  // Use the TypeScript version pinned in the repository rather than the one bundled with the
+  // editor, so everyone sees the same errors.
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // Import suggestions should offer "@myhome/ui", never a relative path into its internals.
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+
+  "files.exclude": {
+    "**/bin": true,
+    "**/obj": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/bin": true,
+    "**/obj": true
+  }
+}

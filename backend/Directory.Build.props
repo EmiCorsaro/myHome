@@ -1,0 +1,63 @@
+<Project>
+
+  <!--
+    Settings shared by every backend project.
+
+    ProductPrefix is the only place the product name appears. Projects are named after their role
+    (Api, Modules.Shared, Modules.Ledger) and both the assembly name and the root namespace are
+    derived from it. Renaming the product means this line plus the namespace declarations.
+
+    "MyHome" is still a working name. Note what it is not: "Household" collides with the Household
+    aggregate, and a type sharing its root namespace breaks name resolution as soon as anyone
+    qualifies a reference.
+  -->
+  <PropertyGroup>
+    <ProductPrefix>MyHome</ProductPrefix>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AssemblyName>$(ProductPrefix).$(MSBuildProjectName)</AssemblyName>
+    <RootNamespace>$(ProductPrefix).$(MSBuildProjectName)</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    An ignored warning in a system that moves money is an incident waiting its turn. Warnings
+    are errors from the first commit, while there are still none to fix.
+  -->
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+  </PropertyGroup>
+
+  <!--
+    Detected by name rather than by reading IsTestProject, because the test SDK sets that
+    property after this file is evaluated: it would still be empty here.
+  -->
+  <PropertyGroup>
+    <IsTestProject Condition="$(MSBuildProjectName.EndsWith('Tests'))">true</IsTestProject>
+  </PropertyGroup>
+
+  <!-- Documentation lives in the editor: public members do not compile without an XML comment. -->
+  <PropertyGroup Condition="'$(IsTestProject)' != 'true'">
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <!--
+      CA1707 forbids underscores in member names. Waived in tests on purpose: the method name is
+      the sentence shown in the failure report, and "an_allocation_never_loses_a_cent" reads
+      better than its PascalCase equivalent.
+    -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+</Project>

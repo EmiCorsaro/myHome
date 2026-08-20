@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Concepts every module needs and none of them owns: Money, Household, Member, tenancy.
+    Depends on no module, and must stay that way.
+  -->
+
+  <PropertyGroup>
+    <!-- CA1716: "Shared" is a VB.NET keyword. Nothing here will ever be consumed from VB. -->
+    <NoWarn>$(NoWarn);CA1716</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+</Project>

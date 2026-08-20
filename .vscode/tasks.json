@@ -1,0 +1,57 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // Starts PostgreSQL, the API and Vite together. This is the everyday command.
+      "label": "run: everything (Aspire)",
+      "type": "shell",
+      "command": "dotnet run --project backend/src/AppHost",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated" },
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      // For working on components without a backend. Reads apps/web/.env.development.
+      "label": "run: frontend only",
+      "type": "npm",
+      "script": "dev",
+      "path": "apps/web",
+      "isBackground": true,
+      "problemMatcher": ["$vite"],
+      "presentation": { "panel": "dedicated" }
+    },
+    {
+      // Referenced by the "Debug API" launch configuration.
+      "label": "build: api",
+      "type": "shell",
+      "command": "dotnet build backend/src/Api",
+      "problemMatcher": ["$msCompile"]
+    },
+    {
+      "label": "check: types",
+      "type": "npm",
+      "script": "typecheck",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "check: lint",
+      "type": "npm",
+      "script": "lint",
+      "problemMatcher": ["$eslint-stylish"]
+    },
+    {
+      "label": "check: backend tests",
+      "type": "shell",
+      "command": "dotnet test backend/MyHome.slnx",
+      "problemMatcher": ["$msCompile"]
+    },
+    {
+      // Everything CI will run. Worth doing before pushing.
+      "label": "check: everything",
+      "dependsOrder": "sequence",
+      "dependsOn": ["check: lint", "check: types", "check: backend tests"],
+      "problemMatcher": []
+    }
+  ]
+}

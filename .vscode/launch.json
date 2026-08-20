@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Breakpoints in .tsx files, hit in the editor rather than in the browser devtools.
+      // Expects a dev server already running (task "run: everything" or "run: frontend only").
+      "name": "Debug frontend in Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/apps/web",
+      "sourceMaps": true
+    },
+    {
+      "name": "Debug frontend in Edge",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/apps/web",
+      "sourceMaps": true
+    },
+    {
+      // The API on its own, without Aspire. Needs PostgreSQL running and
+      // ConnectionStrings__myhomedb set; see SETUP.md.
+      "name": "Debug API",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/src/Api/bin/Debug/net10.0/MyHome.Api.dll",
+      "cwd": "${workspaceFolder}/backend/src/Api",
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development" },
+      "preLaunchTask": "build: api"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug API + frontend",
+      "configurations": ["Debug API", "Debug frontend in Chrome"]
+    }
+  ]
+}

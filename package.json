@@ -1,0 +1,31 @@
+{
+  "name": "myhome",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @myhome/web",
+    "build": "npm run build --workspace @myhome/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.8.1",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.9.0",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.67.0"
+  },
+  "comment:typescript": "TypeScript 7 (the native compiler) is stable, but typescript-eslint 8.67 only supports <6.1.0. Pinned to 6.0.x until the linter catches up; upgrading sooner would force --legacy-peer-deps and give up type-aware linting."
+}

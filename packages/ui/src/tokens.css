@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+/*
+  The product's visual vocabulary. No component writes a literal colour, radius or spacing.
+
+  Two palettes that do not mix:
+    EXPRESSIVE - categories, actions, module identity. Use freely.
+    SEMANTIC   - income, expense, caution, alarm. Reserved, never decorative.
+
+  If a "view reports" button spends the orange, then a projected balance turning red stops being
+  an alarm and becomes just another colour.
+*/
+
+@theme {
+  /* Warm neutrals. Eight values, and the difference between a household tool
+     and corporate software. */
+  --color-canvas: oklch(0.985 0.004 85);
+  --color-surface: oklch(1 0 0);
+  --color-surface-sunken: oklch(0.968 0.005 85);
+  --color-line: oklch(0.912 0.006 85);
+  --color-line-strong: oklch(0.845 0.008 85);
+  --color-ink: oklch(0.24 0.012 75);
+  --color-ink-soft: oklch(0.47 0.011 75);
+  --color-ink-faint: oklch(0.63 0.009 75);
+
+  /* Semantic palette. Four tones, reserved. */
+  --color-positive: oklch(0.55 0.13 155);
+  --color-positive-bg: oklch(0.955 0.032 155);
+  --color-negative: oklch(0.55 0.18 25);
+  --color-negative-bg: oklch(0.958 0.028 25);
+  --color-caution: oklch(0.62 0.14 70);
+  --color-caution-bg: oklch(0.96 0.045 75);
+  --color-accent: oklch(0.52 0.15 250);
+  --color-accent-bg: oklch(0.955 0.028 250);
+
+  /* Expressive palette. Ten tones for expense categories — a hard requirement
+     of the by-category report, not decoration. Ordered so neighbours in a list
+     do not blur together, including under deuteranopia. */
+  --color-cat-1: oklch(0.58 0.15 250);
+  --color-cat-2: oklch(0.6 0.13 165);
+  --color-cat-3: oklch(0.58 0.16 300);
+  --color-cat-4: oklch(0.65 0.15 55);
+  --color-cat-5: oklch(0.58 0.15 350);
+  --color-cat-6: oklch(0.6 0.12 205);
+  --color-cat-7: oklch(0.63 0.14 130);
+  --color-cat-8: oklch(0.55 0.14 20);
+  --color-cat-9: oklch(0.62 0.1 90);
+  --color-cat-10: oklch(0.55 0.08 275);
+
+  /* Typography. Tabular figures are not a preference: without them a column of
+     amounts does not line up. */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-numeric: ui-sans-serif, system-ui, sans-serif;
+
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Applied by the Money component, which every figure goes through. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+}

@@ -1,0 +1,14 @@
+{
+  // VS Code offers to install these the first time the repository is opened.
+  // Keeping the list here means nobody has to be told what to install over chat.
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "editorconfig.editorconfig",
+    "ms-dotnettools.csdevkit",
+    "ms-dotnettools.vscode-dotnet-runtime",
+    "ms-azuretools.vscode-docker",
+    "vitest.explorer"
+  ]
+}

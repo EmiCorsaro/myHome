@@ -1,0 +1,12 @@
+/*
+  The application's single stylesheet entry point.
+
+  Tokens come from the UI package: the application defines no colour and no radius of its own. If
+  a new one is needed, it is added in @myhome/ui and inherited everywhere.
+*/
+@import "@myhome/ui/tokens.css";
+
+/* Tailwind needs to know where to look for classes. The UI package lives outside this directory,
+   so it has to be pointed at explicitly or its utilities would not be generated. */
+@source "../src";
+@source "../../../packages/ui/src";

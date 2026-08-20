@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The Ledger module, whole: its public contracts and its implementation.
+
+    The contracts live in the Contracts/ folder and the MyHome.Modules.Ledger.Contracts namespace.
+    They used to be a separate project, and the separation was dropped on purpose: with a single
+    module there was nobody it could protect, while every new DTO still cost a decision about
+    which project it belonged in. The boundary is now enforced by an architecture test instead —
+    see ModuleBoundaryTests. Splitting it back out, if a module ever needs the contracts without
+    the implementation, is a file move: the namespaces already match.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modules.Shared\Modules.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+</Project>
