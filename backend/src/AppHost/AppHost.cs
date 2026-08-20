@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using Aspire.Hosting.ApplicationModel;
+using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -9,9 +11,10 @@ const int WebPort = 5173;
 // ConnectionStrings:myhomedb, set via `dotnet user-secrets` on this project, switches the whole
 // app to a remote database (e.g. Supabase) instead of the local container. Nobody without that
 // secret is affected: they still get the container, untouched, on plain `dotnet run`.
-var database = builder.Configuration.GetConnectionString("myhomedb") is not null
-    ? builder.AddConnectionString("myhomedb")
-    : LocalPostgresDatabase(builder);
+IResourceBuilder<IResourceWithConnectionString> database =
+    builder.Configuration.GetConnectionString("myhomedb") is not null
+        ? builder.AddConnectionString("myhomedb")
+        : LocalPostgresDatabase(builder);
 
 static IResourceBuilder<PostgresDatabaseResource> LocalPostgresDatabase(
     IDistributedApplicationBuilder builder)

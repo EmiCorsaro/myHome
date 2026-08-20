@@ -96,6 +96,58 @@ npm run dev --workspace @myhome/web
 This reads `apps/web/.env.development` to find the API. If the API is not running, screens that
 fetch data will show their error state — which is a good reason to design that state properly.
 
+## Working against a shared database
+
+By default `AppHost.cs` starts PostgreSQL in a local container, isolated per machine. To work
+against one shared database instead — so two people see the same accounts and entries while
+developing — point it at a remote Postgres (e.g. a free [Supabase](https://supabase.com)
+project) through a user secret:
+
+```bash
+dotnet user-secrets set "ConnectionStrings:myhomedb" "Host=aws-0-<region>.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.<project-ref>;Password=<password>;SSL Mode=VerifyFull" --project backend/src/AppHost
+```
+
+Get the exact host, region and username from the project dashboard: click **Connect** (top of
+any page in the project) and select **Session pooler** — not "Direct connection" and not
+"Transaction pooler":
+
+- **Direct connection** (`db.<project-ref>.supabase.co`) is IPv6-only on the free tier. Most
+  home networks have no IPv6 route out, so the connection times out instead of failing cleanly —
+  EF Core's retry strategy wraps the eventual failure in a generic
+  `InvalidOperationException: ... likely due to a transient failure`, several layers away from
+  the DNS/routing problem that actually caused it.
+- **Transaction pooler** (port `6543`) does not support prepared statements, which breaks EF
+  Core's migrations.
+- **Session pooler** (port `5432`, host `aws-0-<region>.pooler.supabase.com`) is IPv4 and gives
+  each connection a real session — the one to use here. Its username is
+  `postgres.<project-ref>`, not just `postgres`: the pooler is multi-tenant, so the project has
+  to be encoded in the username to route the connection correctly.
+
+`<project-ref>` is the random reference Supabase assigns the project (Project Settings →
+General → Reference ID) — **not** the project's display name. The two look interchangeable but
+are not: a display name in that slot resolves nowhere.
+
+`AppHost.cs` checks for this secret before deciding what to run: present, it wires the API
+straight to Supabase and skips the container and pgweb entirely; absent, everything behaves
+exactly as before. Nobody without the secret is affected by it.
+
+To go back to the local container:
+
+```bash
+dotnet user-secrets remove "ConnectionStrings:myhomedb" --project backend/src/AppHost
+```
+
+**The first run against an empty shared database seeds it** — same `DevelopmentSeeder` and
+`LedgerSeeder` as local, just pointed elsewhere. Whoever runs it first creates the household;
+everyone after sees it already there.
+
+If the Supabase project has Network Restrictions enabled (Project Settings → Database → Network
+Restrictions), every machine that connects needs its public IP allow-listed there first, or the
+connection fails at the network layer before Postgres ever sees it. Residential IPs are usually
+dynamic — if a connection that worked yesterday stops working with no local change, check
+whether the allow-listed IP is still current (`curl https://ifconfig.me`) before looking anywhere
+else.
+
 ## Before pushing
 
 CI runs formatting, linting, types, both builds, all tests and a vulnerability scan. To check
@@ -115,6 +167,7 @@ on save enabled — it is, in the committed settings — this never comes up.
 | Hundreds of lines of Kubernetes stack traces                                                         | The development certificate is not trusted. Go back to step 2.             |
 | `Cannot connect to the Docker daemon`                                                                | Docker Desktop is not running.                                             |
 | `VITE_API_URL is not set`                                                                            | The frontend was started outside Aspire and `.env.development` is missing. |
+| `InvalidOperationException: ... likely due to a transient failure` while seeding, against Supabase   | Usually the `Host=` in the `ConnectionStrings:myhomedb` secret: a project display name instead of its reference ID, the IPv6-only direct host on an IPv4-only network, or an IP not on the Network Restrictions allow-list. See "Working against a shared database". |
 | Port already in use                                                                                  | A previous run is still alive. Close it, or restart Docker Desktop.        |
 | The web app loads but every request returns 401                                                      | The API is up but the database is empty. Restart the AppHost so it seeds.  |
 | `Unable to allocate a network port`, then `Service postgres should have valid address at this point` | Windows has the ports reserved. See below.                                 |
