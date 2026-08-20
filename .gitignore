@@ -1,16 +1,3 @@
-# ---------------------------------------------------------------------------
-# Private documentation — NEVER commit.
-#
-#   context/  real personal data: income figures, bank account structure,
-#             assets, third-party information.
-#   docs/     design documentation. Derived from the real household above, so
-#             it is treated as context-model material even though it is written
-#             in the abstract.
-#
-# Excluded deliberately, from the first commit. Publishable documentation
-# (usage guides, testing and test-case docs) will live elsewhere and is written
-# in English — see README.
-# ---------------------------------------------------------------------------
 context/
 docs/
 *.private.md
