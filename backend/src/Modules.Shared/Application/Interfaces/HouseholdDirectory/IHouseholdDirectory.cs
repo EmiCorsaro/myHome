@@ -1,3 +1,9 @@
+using MyHome.Modules.Shared.Contracts.Households;
+
+// The service interfaces sit next to the implementations that fulfil them, one per file, each in
+// its own folder. The Interfaces/ and Services/ folders do not become namespace segments: a
+// segment named after the interface would collide with the implementation class of the same name
+// and make every `HouseholdDirectory` reference ambiguous.
 namespace MyHome.Modules.Shared.Application;
 
 /// <summary>

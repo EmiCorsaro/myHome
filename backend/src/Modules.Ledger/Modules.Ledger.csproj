@@ -3,12 +3,18 @@
   <!--
     The Ledger module, whole: its public contracts and its implementation.
 
-    The contracts live in the Contracts/ folder and the MyHome.Modules.Ledger.Contracts namespace.
-    They used to be a separate project, and the separation was dropped on purpose: with a single
-    module there was nobody it could protect, while every new DTO still cost a decision about
-    which project it belonged in. The boundary is now enforced by an architecture test instead —
-    see ModuleBoundaryTests. Splitting it back out, if a module ever needs the contracts without
-    the implementation, is a file move: the namespaces already match.
+    Two namespaces are published. Contracts/ holds the data contracts — the shapes the module
+    exchanges. Application/Interfaces holds the service interfaces, beside the Application/Services
+    that fulfil them.
+
+    That second one is public API sitting inside the implementation layer, so the namespace no
+    longer marks the boundary: visibility does. Every service is internal, which leaves the
+    interfaces as the only types an outside assembly can reach. ModuleBoundaryTests enforces it,
+    and that test is the whole reason the arrangement is safe — do not delete it.
+
+    The contracts used to be a separate project. The separation was dropped on purpose: with a
+    single module there was nobody it could protect, while every new DTO still cost a decision
+    about which project it belonged in.
   -->
 
   <ItemGroup>

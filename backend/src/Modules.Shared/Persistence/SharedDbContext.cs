@@ -1,4 +1,5 @@
-using MyHome.Modules.Shared.Households;
+using MyHome.Modules.Shared.Contracts;
+using MyHome.Modules.Shared.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace MyHome.Modules.Shared.Persistence;
@@ -21,7 +22,7 @@ public sealed class SharedDbContext(DbContextOptions<SharedDbContext> options)
     : DbContext(options)
 {
     /// <summary>Name of the database schema this context owns.</summary>
-    public const string Schema = "shared";
+    public const string Schema = SharedModule.Schema;
 
     /// <summary>Registered households.</summary>
     public DbSet<Household> Households => Set<Household>();

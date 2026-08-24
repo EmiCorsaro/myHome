@@ -1,18 +1,21 @@
 using MyHome.Modules.Ledger.Domain;
-using MyHome.Modules.Shared;
+using MyHome.Modules.Shared.Domain;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MyHome.Modules.Ledger.Persistence;
 
 /// <summary>
-/// Creates the module's tables and the household's starting accounts and categories.
+/// Gives a household its starting accounts and categories.
 /// </summary>
 /// <remarks>
-/// Development only. Goes away when there is data worth keeping and the schema moves to versioned
-/// migrations.
+/// Development only, and data only: the schema is <see cref="LedgerSchema"/>'s job and has already
+/// been applied by the time this runs.
+/// <para>
+/// <b>This is really product logic wearing a seeder's clothes.</b> A real household created
+/// tomorrow will want the same starting chart of accounts, so this belongs in whatever handles
+/// household creation, not here. It stays until that exists.
+/// </para>
 /// </remarks>
 public static class LedgerSeeder
 {
@@ -24,10 +27,6 @@ public static class LedgerSeeder
         StarterAccounts =
         [
             ("Santander conjunta", AccountType.Checking, true, 800m),
-            ("N26 conjunta", AccountType.Checking, true, 150m),
-            ("Santander autónomos", AccountType.Checking, false, null),
-            ("N26 Emi", AccountType.Checking, false, null),
-            ("N26 Agustina", AccountType.Checking, false, null),
             ("Tarjeta Santander", AccountType.CreditCard, false, null),
             ("Efectivo", AccountType.Cash, false, null),
         ];
@@ -41,12 +40,12 @@ public static class LedgerSeeder
     /// </remarks>
     private static readonly (string Parent, int Color, string[] Children)[] ExpenseCategories =
         [
-            ("Vivienda", 1, ["Alquiler", "Servicios comunes"]),
+            ("Vivienda", 1, ["Alquiler", "Subministros comunidad"]),
             ("Supermercado", 2, []),
-            ("Suministros", 3, ["Luz", "Agua", "Internet y móvil"]),
+            ("Servicios", 3, ["Luz", "Agua", "Internet & Móvil"]),
             ("Seguros", 4, ["Seguro de salud", "Seguro de Jager"]),
             ("Suscripciones", 5, []),
-            ("Ocio", 6, ["Tapeo y cañas", "Cine", "Restaurante"]),
+            ("Ocio", 6, ["Tapeo", "Cine", "Restaurante", "Helados"]),
             ("Cuidado personal", 7, ["Gimnasio", "Peluquería", "Uñas"]),
             ("Jager", 8, ["Comida", "Peluquería canina", "Veterinario"]),
             ("Formación", 9, ["UAX"]),
@@ -58,16 +57,13 @@ public static class LedgerSeeder
         [
             ("Nómina", 2),
             ("Facturación", 7),
-            ("Alquiler Barracas", 9),
+            ("Pagas Extra", 6),
+            ("Devoluciones/Reembolsos", 6),
             ("Otros ingresos", 6),
         ];
 
-    /// <summary>Tables the module expects to find in its schema.</summary>
-    private static readonly string[] ExpectedTables =
-        ["accounts", "categories", "journal_entries", "postings", "recurring_rules"];
-
     /// <summary>
-    /// Ensures the ledger schema exists and the household has accounts and categories.
+    /// Ensures the household has its starting accounts and categories.
     /// </summary>
     /// <param name="services">The application's service provider.</param>
     /// <param name="householdId">Household to seed.</param>
@@ -88,59 +84,7 @@ public static class LedgerSeeder
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<LedgerDbContext>();
 
-        await EnsureTablesAsync(db, cancellationToken).ConfigureAwait(false);
         await EnsureDataAsync(db, householdId, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>Creates the schema if it is missing or out of date.</summary>
-    /// <param name="db">Ledger data context.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A task that completes once the tables are in place.</returns>
-    /// <remarks>
-    /// EnsureCreated is no use here: it asks whether the database has any tables at all, and the
-    /// shared module has already created its own by the time this runs, so it decides there is
-    /// nothing to do and leaves this schema empty. Whoever adds the third module will hit the
-    /// same thing.
-    /// <para>
-    /// A missing table means the model has moved on, so the schema is dropped and rebuilt.
-    /// Development data is disposable; this stops being acceptable the day migrations arrive.
-    /// </para>
-    /// </remarks>
-    private static async Task EnsureTablesAsync(
-        LedgerDbContext db,
-        CancellationToken cancellationToken)
-    {
-        var creator = db.GetService<IRelationalDatabaseCreator>();
-
-        if (!await creator.ExistsAsync(cancellationToken).ConfigureAwait(false))
-        {
-            await creator.CreateAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        var present = await db.Database
-            .SqlQuery<string>(
-                $"""
-                SELECT table_name AS "Value" FROM information_schema.tables
-                WHERE table_schema = {LedgerDbContext.Schema}
-                """)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        if (ExpectedTables.All(present.Contains))
-        {
-            return;
-        }
-
-        if (present.Count > 0)
-        {
-            await db.Database
-                .ExecuteSqlRawAsync(
-                    $"DROP SCHEMA IF EXISTS {LedgerDbContext.Schema} CASCADE",
-                    cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        await creator.CreateTablesAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task EnsureDataAsync(

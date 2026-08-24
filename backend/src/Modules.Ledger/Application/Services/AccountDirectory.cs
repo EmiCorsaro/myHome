@@ -1,4 +1,3 @@
-using MyHome.Modules.Ledger.Contracts;
 using MyHome.Modules.Ledger.Contracts.Accounts;
 using MyHome.Modules.Ledger.Domain;
 using MyHome.Modules.Ledger.Persistence;

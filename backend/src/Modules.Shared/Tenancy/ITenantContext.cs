@@ -5,9 +5,15 @@ namespace MyHome.Modules.Shared.Tenancy;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This is the piece tenant isolation hangs from. Repositories apply a global filter on
-/// <see cref="HouseholdId"/>, so a query that forgets the filter cannot return someone else's
-/// data.
+/// This is the piece tenant isolation hangs from. <b>Nothing enforces it yet:</b> there is no
+/// global query filter, so every query that touches household-owned data has to filter on
+/// <see cref="HouseholdId"/> itself. A service that forgets it returns another household's rows,
+/// silently and without failing a test.
+/// </para>
+/// <para>
+/// The fix is a <c>HasQueryFilter</c> on each module's context, driven by this interface. Until
+/// that lands, treat the filter as a review item on every new query, and reach for
+/// <c>IgnoreQueryFilters</c>-style shortcuts nowhere.
 /// </para>
 /// <para>
 /// It is resolved per request scope. Outside an HTTP request (background jobs, migrations) the

@@ -1,4 +1,4 @@
-namespace MyHome.Modules.Shared.Households;
+namespace MyHome.Modules.Shared.Domain;
 
 /// <summary>
 /// What a member is allowed to do inside their household.

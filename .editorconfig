@@ -20,5 +20,12 @@ csharp_style_var_when_type_is_apparent = true:suggestion
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
 
+# EF Core writes these files and rewrites them on every `migrations add`. They are generated code:
+# the project's style and quality rules do not apply to them, and without this every new migration
+# would have to be hand-edited to get past TreatWarningsAsErrors. Hand-editing a migration that has
+# already been applied somewhere is exactly what must never happen.
+[**/Persistence/Migrations/*.cs]
+generated_code = true
+
 [*.md]
 trim_trailing_whitespace = false

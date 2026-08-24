@@ -1,4 +1,4 @@
-using MyHome.Modules.Shared.Application;
+using MyHome.Modules.Shared.Contracts;
 using Microsoft.AspNetCore.Diagnostics;
 
 namespace MyHome.Api.ErrorHandling;

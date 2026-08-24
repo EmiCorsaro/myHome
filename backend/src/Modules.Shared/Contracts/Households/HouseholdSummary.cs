@@ -1,4 +1,4 @@
-namespace MyHome.Modules.Shared.Application;
+namespace MyHome.Modules.Shared.Contracts.Households;
 
 /// <summary>
 /// Read-only view of a household and its members, shaped for the API.

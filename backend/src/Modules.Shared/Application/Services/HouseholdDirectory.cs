@@ -1,3 +1,4 @@
+using MyHome.Modules.Shared.Contracts.Households;
 using MyHome.Modules.Shared.Persistence;
 using MyHome.Modules.Shared.Tenancy;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +10,7 @@ namespace MyHome.Modules.Shared.Application;
 /// </summary>
 /// <param name="db">Shared data context.</param>
 /// <param name="tenant">Tenant context for the current request.</param>
-public sealed class HouseholdDirectory(SharedDbContext db, ITenantContext tenant)
+internal sealed class HouseholdDirectory(SharedDbContext db, ITenantContext tenant)
     : IHouseholdDirectory
 {
     /// <inheritdoc />

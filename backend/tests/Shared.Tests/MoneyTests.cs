@@ -1,4 +1,4 @@
-using MyHome.Modules.Shared;
+using MyHome.Modules.Shared.Domain;
 
 namespace MyHome.Modules.Shared.Tests;
 

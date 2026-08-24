@@ -55,14 +55,21 @@ var app = builder.Build();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
+// Schema before anything else, in every environment. Each module owns its own migration history,
+// so a database several migrations behind receives exactly the ones it is missing — which is what
+// lets dev and production be updated at different times without anyone tracking their state.
+//
+// Shared goes first: it owns the household every other module's rows point at.
+await SharedSchema.MigrateAsync(app.Services).ConfigureAwait(false);
+await LedgerSchema.MigrateAsync(app.Services).ConfigureAwait(false);
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.UseCors(DevelopmentCorsPolicy);
 
-    // Modules.Shared creates the database and the working household; each module then seeds its
-    // own schema. The identifier is passed along so no module needs to know how a household is
-    // found.
+    // Sample data, never in production. Modules.Shared creates the working household and passes
+    // its identifier along, so no module needs to know how a household is found.
     var householdId = await DevelopmentSeeder.EnsureSeededAsync(app.Services)
         .ConfigureAwait(false);
 

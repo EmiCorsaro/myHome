@@ -1,4 +1,4 @@
-namespace MyHome.Modules.Shared.Households;
+namespace MyHome.Modules.Shared.Domain;
 
 /// <summary>
 /// A person inside a household.

@@ -1,6 +1,5 @@
 using FluentValidation;
 using MyHome.Modules.Ledger.Application;
-using MyHome.Modules.Ledger.Contracts;
 using MyHome.Modules.Ledger.Contracts.Expenses;
 using MyHome.Modules.Ledger.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -13,8 +12,9 @@ namespace MyHome.Modules.Ledger;
 /// Registers the Ledger module in the dependency injection container.
 /// </summary>
 /// <remarks>
-/// This is the module's only entry point from the composition root. Everything else in the
-/// module is internal: callers talk to <c>MyHome.Modules.Ledger.Contracts</c>.
+/// This is the module's only entry point from the composition root. Callers talk to the service
+/// interfaces in <c>MyHome.Modules.Ledger.Application</c> and the shapes in
+/// <c>MyHome.Modules.Ledger.Contracts</c>; everything else is internal and cannot be reached.
 /// </remarks>
 public static class LedgerServiceCollectionExtensions
 {

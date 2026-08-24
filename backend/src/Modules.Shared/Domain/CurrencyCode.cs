@@ -1,4 +1,4 @@
-namespace MyHome.Modules.Shared;
+namespace MyHome.Modules.Shared.Domain;
 
 /// <summary>
 /// A three-letter ISO 4217 currency code, always uppercase.

@@ -1,5 +1,5 @@
 using MyHome.Modules.Ledger.Domain;
-using MyHome.Modules.Shared;
+using MyHome.Modules.Shared.Domain;
 
 namespace MyHome.Ledger.Tests;
 

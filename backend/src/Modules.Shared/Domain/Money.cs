@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace MyHome.Modules.Shared;
+namespace MyHome.Modules.Shared.Domain;
 
 /// <summary>
 /// An amount together with its currency. The base type of the whole system: no amount ever

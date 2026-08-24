@@ -1,4 +1,4 @@
-namespace MyHome.Modules.Shared.Application;
+namespace MyHome.Modules.Shared.Contracts;
 
 /// <summary>
 /// Thrown when a request does not satisfy the rules of the operation it is asking for.

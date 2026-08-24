@@ -1,10 +1,9 @@
 using FluentValidation;
-using MyHome.Modules.Ledger.Contracts;
 using MyHome.Modules.Ledger.Contracts.Expenses;
 using MyHome.Modules.Ledger.Domain;
 using MyHome.Modules.Ledger.Persistence;
-using MyHome.Modules.Shared;
-using MyHome.Modules.Shared.Application;
+using MyHome.Modules.Shared.Domain;
+using MyHome.Modules.Shared.Contracts;
 using MyHome.Modules.Shared.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
@@ -89,7 +88,7 @@ internal sealed class ExpenseRegistrar(
             rule = RecurringRule.Create(
                 householdId,
                 EntryKind.Expense,
-                (RecurrenceFrequency)request.Recurrence,
+                ToFrequency(request.Recurrence),
                 account,
                 category,
                 request.Description,
@@ -177,7 +176,7 @@ internal sealed class ExpenseRegistrar(
 
         var recurrence = entry.RecurringRuleId is null
             ? ExpenseRecurrence.Once
-            : (ExpenseRecurrence)(await db.RecurringRules
+            : ToRecurrence(await db.RecurringRules
                 .Where(r => r.Id == entry.RecurringRuleId)
                 .Select(r => r.Frequency)
                 .SingleAsync(cancellationToken)
@@ -252,6 +251,57 @@ internal sealed class ExpenseRegistrar(
             recurrence,
             wasAlreadyRegistered);
     }
+
+    /// <summary>
+    /// Translates the published recurrence onto the domain's own frequency.
+    /// </summary>
+    /// <param name="recurrence">Recurrence as the client sent it. Must not be
+    /// <see cref="ExpenseRecurrence.Once"/>: a one-off expense creates no rule.</param>
+    /// <returns>The matching domain frequency.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">If the value has no counterpart.</exception>
+    /// <remarks>
+    /// Written out member by member rather than cast across. The two enums are separate on
+    /// purpose — one is a frozen wire contract, the other is free to change — and a numeric cast
+    /// silently ties their ordering together: inserting a member in the middle of the domain enum
+    /// would relabel every rule already stored, without a compiler error and without a failing
+    /// test. This switch stops compiling instead.
+    /// </remarks>
+    private static RecurrenceFrequency ToFrequency(ExpenseRecurrence recurrence) => recurrence switch
+    {
+        ExpenseRecurrence.Monthly => RecurrenceFrequency.Monthly,
+        ExpenseRecurrence.BiMonthly => RecurrenceFrequency.BiMonthly,
+        ExpenseRecurrence.Quarterly => RecurrenceFrequency.Quarterly,
+        ExpenseRecurrence.Once => throw new ArgumentOutOfRangeException(
+            nameof(recurrence),
+            recurrence,
+            "A one-off expense creates no recurring rule."),
+        _ => throw new ArgumentOutOfRangeException(
+            nameof(recurrence),
+            recurrence,
+            "Unknown recurrence."),
+    };
+
+    /// <summary>
+    /// Translates a stored frequency back onto the published recurrence.
+    /// </summary>
+    /// <param name="frequency">Frequency as the rule holds it.</param>
+    /// <returns>The matching contract value.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">If the value has no counterpart.</exception>
+    /// <remarks>
+    /// The inverse of <see cref="ToFrequency"/>, and explicit for the same reason. When the domain
+    /// grows a frequency the contract does not publish yet, this is where it has to be decided
+    /// rather than leaking out as an unnamed number.
+    /// </remarks>
+    private static ExpenseRecurrence ToRecurrence(RecurrenceFrequency frequency) => frequency switch
+    {
+        RecurrenceFrequency.Monthly => ExpenseRecurrence.Monthly,
+        RecurrenceFrequency.BiMonthly => ExpenseRecurrence.BiMonthly,
+        RecurrenceFrequency.Quarterly => ExpenseRecurrence.Quarterly,
+        _ => throw new ArgumentOutOfRangeException(
+            nameof(frequency),
+            frequency,
+            "The rule has a frequency the contract does not publish."),
+    };
 
     private static ValidationFailedException Invalid(string field, string message) =>
         new(new Dictionary<string, string[]> { [field] = [message] });

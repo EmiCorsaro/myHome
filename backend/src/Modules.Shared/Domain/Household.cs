@@ -1,4 +1,4 @@
-namespace MyHome.Modules.Shared.Households;
+namespace MyHome.Modules.Shared.Domain;
 
 /// <summary>
 /// The household: the system's tenancy unit. Every piece of data belongs to exactly one.

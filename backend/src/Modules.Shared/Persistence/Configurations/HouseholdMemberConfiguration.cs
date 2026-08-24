@@ -1,4 +1,4 @@
-using MyHome.Modules.Shared.Households;
+using MyHome.Modules.Shared.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

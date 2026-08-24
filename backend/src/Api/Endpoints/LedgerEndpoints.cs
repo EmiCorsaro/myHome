@@ -1,4 +1,4 @@
-using MyHome.Modules.Ledger.Contracts;
+using MyHome.Modules.Ledger.Application;
 using MyHome.Modules.Ledger.Contracts.Accounts;
 using MyHome.Modules.Ledger.Contracts.Categories;
 using MyHome.Modules.Ledger.Contracts.Dashboard;

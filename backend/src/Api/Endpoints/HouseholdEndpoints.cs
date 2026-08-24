@@ -1,4 +1,5 @@
 using MyHome.Modules.Shared.Application;
+using MyHome.Modules.Shared.Contracts.Households;
 
 namespace MyHome.Api.Endpoints;
 
