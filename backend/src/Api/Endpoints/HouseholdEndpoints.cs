@@ -3,25 +3,8 @@ using MyHome.Modules.Shared.Contracts.Households;
 
 namespace MyHome.Api.Endpoints;
 
-/// <summary>
-/// Household endpoints.
-/// </summary>
-/// <remarks>
-/// No query, no rule, no calculation: bind, delegate, map to a status. An architecture test
-/// asserts this project cannot reach the database even if someone tries.
-/// </remarks>
 public static class HouseholdEndpoints
 {
-    /// <summary>
-    /// Registers the household endpoints.
-    /// </summary>
-    /// <param name="app">The application's route builder.</param>
-    /// <returns>The same builder, for chaining.</returns>
-    /// <example>
-    /// <code>
-    /// app.MapHouseholdEndpoints();
-    /// </code>
-    /// </example>
     public static IEndpointRouteBuilder MapHouseholdEndpoints(this IEndpointRouteBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);

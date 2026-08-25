@@ -1,26 +1,30 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace MyHome.Modules.Ledger.Persistence.Migrations
 {
-    /// <inheritdoc />
     public partial class InitialLedger : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
                 name: "ledger");
+
+            migrationBuilder.CreateSequence(
+                name: "key_sequence",
+                schema: "ledger",
+                incrementBy: 10);
 
             migrationBuilder.CreateTable(
                 name: "accounts",
                 schema: "ledger",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    household_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<int>(type: "integer", nullable: false),
+                    public_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    household_id = table.Column<int>(type: "integer", nullable: false),
                     name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
                     type = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     currency = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
@@ -40,11 +44,12 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                 schema: "ledger",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    household_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<int>(type: "integer", nullable: false),
+                    public_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    household_id = table.Column<int>(type: "integer", nullable: false),
                     name = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
                     kind = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    parent_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    parent_id = table.Column<int>(type: "integer", nullable: true),
                     color_index = table.Column<int>(type: "integer", nullable: false),
                     display_order = table.Column<int>(type: "integer", nullable: false),
                     is_archived = table.Column<bool>(type: "boolean", nullable: false)
@@ -62,16 +67,56 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "incomes",
+                schema: "ledger",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false),
+                    public_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    household_id = table.Column<int>(type: "integer", nullable: false),
+                    name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    source = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    periodicity = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    account_id = table.Column<int>(type: "integer", nullable: false),
+                    category_id = table.Column<int>(type: "integer", nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(19,4)", precision: 19, scale: 4, nullable: false),
+                    currency = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
+                    day_of_month = table.Column<int>(type: "integer", nullable: false),
+                    starts_on = table.Column<DateOnly>(type: "date", nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_incomes", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_incomes_accounts_account_id",
+                        column: x => x.account_id,
+                        principalSchema: "ledger",
+                        principalTable: "accounts",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_incomes_categories_category_id",
+                        column: x => x.category_id,
+                        principalSchema: "ledger",
+                        principalTable: "categories",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "recurring_rules",
                 schema: "ledger",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    household_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<int>(type: "integer", nullable: false),
+                    public_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    household_id = table.Column<int>(type: "integer", nullable: false),
                     kind = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     frequency = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    account_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    category_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    account_id = table.Column<int>(type: "integer", nullable: false),
+                    category_id = table.Column<int>(type: "integer", nullable: false),
                     description = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     amount = table.Column<decimal>(type: "numeric(19,4)", precision: 19, scale: 4, nullable: false),
                     currency = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
@@ -104,14 +149,15 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                 schema: "ledger",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    household_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<int>(type: "integer", nullable: false),
+                    public_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    household_id = table.Column<int>(type: "integer", nullable: false),
                     kind = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     occurred_on = table.Column<DateOnly>(type: "date", nullable: false),
                     description = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     client_mutation_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
-                    recurring_rule_id = table.Column<Guid>(type: "uuid", nullable: true)
+                    recurring_rule_id = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -130,13 +176,13 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                 schema: "ledger",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    journal_entry_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<int>(type: "integer", nullable: false),
+                    journal_entry_id = table.Column<int>(type: "integer", nullable: false),
+                    account_id = table.Column<int>(type: "integer", nullable: false),
                     amount = table.Column<decimal>(type: "numeric(19,4)", precision: 19, scale: 4, nullable: false),
                     currency = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
-                    category_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    member_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    category_id = table.Column<int>(type: "integer", nullable: true),
+                    member_id = table.Column<int>(type: "integer", nullable: true),
                     fx_rate = table.Column<decimal>(type: "numeric(19,8)", precision: 19, scale: 8, nullable: false),
                     amount_base = table.Column<decimal>(type: "numeric(19,4)", precision: 19, scale: 4, nullable: false)
                 },
@@ -173,6 +219,13 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                 columns: new[] { "household_id", "display_order" });
 
             migrationBuilder.CreateIndex(
+                name: "ux_accounts_public_id",
+                schema: "ledger",
+                table: "accounts",
+                column: "public_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_categories_parent_id",
                 schema: "ledger",
                 table: "categories",
@@ -183,6 +236,44 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                 schema: "ledger",
                 table: "categories",
                 columns: new[] { "household_id", "kind", "display_order" });
+
+            migrationBuilder.CreateIndex(
+                name: "ux_categories_public_id",
+                schema: "ledger",
+                table: "categories",
+                column: "public_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_incomes_account_id",
+                schema: "ledger",
+                table: "incomes",
+                column: "account_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_incomes_category_id",
+                schema: "ledger",
+                table: "incomes",
+                column: "category_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_incomes_household",
+                schema: "ledger",
+                table: "incomes",
+                columns: new[] { "household_id", "is_active" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_incomes_household_starts_on",
+                schema: "ledger",
+                table: "incomes",
+                columns: new[] { "household_id", "starts_on" });
+
+            migrationBuilder.CreateIndex(
+                name: "ux_incomes_public_id",
+                schema: "ledger",
+                table: "incomes",
+                column: "public_id",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_journal_entries_recurring_rule_id",
@@ -203,6 +294,13 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                 columns: new[] { "household_id", "client_mutation_id" },
                 unique: true,
                 filter: "client_mutation_id IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_journal_entries_public_id",
+                schema: "ledger",
+                table: "journal_entries",
+                column: "public_id",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_postings_journal_entry_id",
@@ -239,11 +337,21 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                 schema: "ledger",
                 table: "recurring_rules",
                 columns: new[] { "household_id", "is_active" });
+
+            migrationBuilder.CreateIndex(
+                name: "ux_recurring_rules_public_id",
+                schema: "ledger",
+                table: "recurring_rules",
+                column: "public_id",
+                unique: true);
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "incomes",
+                schema: "ledger");
+
             migrationBuilder.DropTable(
                 name: "postings",
                 schema: "ledger");
@@ -262,6 +370,10 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "categories",
+                schema: "ledger");
+
+            migrationBuilder.DropSequence(
+                name: "key_sequence",
                 schema: "ledger");
         }
     }

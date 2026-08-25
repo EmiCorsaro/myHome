@@ -5,39 +5,18 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MyHome.Modules.Ledger.Persistence;
 
-/// <summary>
-/// Gives a household its starting accounts and categories.
-/// </summary>
-/// <remarks>
-/// Development only, and data only: the schema is <see cref="LedgerSchema"/>'s job and has already
-/// been applied by the time this runs.
-/// <para>
-/// <b>This is really product logic wearing a seeder's clothes.</b> A real household created
-/// tomorrow will want the same starting chart of accounts, so this belongs in whatever handles
-/// household creation, not here. It stays until that exists.
-/// </para>
-/// </remarks>
 public static class LedgerSeeder
 {
-    /// <summary>
-    /// Accounts the household starts with. These names are shown to the user, so they are in
-    /// Spanish; edit them here until there is a screen for it.
-    /// </summary>
+    private const string MainAccount = "Santander conjunta";
+
     private static readonly (string Name, AccountType Type, bool Tracked, decimal? Buffer)[]
         StarterAccounts =
         [
-            ("Santander conjunta", AccountType.Checking, true, 800m),
+            (MainAccount, AccountType.Checking, true, 800m),
             ("Tarjeta Santander", AccountType.CreditCard, false, null),
             ("Efectivo", AccountType.Cash, false, null),
         ];
 
-    /// <summary>
-    /// Starting expense categories, each parent followed by its children.
-    /// </summary>
-    /// <remarks>
-    /// Children inherit the parent's colour, so the by-category report reads as ten blocks no
-    /// matter how many leaves hang underneath.
-    /// </remarks>
     private static readonly (string Parent, int Color, string[] Children)[] ExpenseCategories =
         [
             ("Vivienda", 1, ["Alquiler", "Subministros comunidad"]),
@@ -52,7 +31,6 @@ public static class LedgerSeeder
             ("Irregulares", 10, ["Ropa", "Regalos", "Tecnología", "Viajes", "Salud"]),
         ];
 
-    /// <summary>Starting income categories.</summary>
     private static readonly (string Name, int Color)[] IncomeCategories =
         [
             ("Nómina", 2),
@@ -62,21 +40,27 @@ public static class LedgerSeeder
             ("Otros ingresos", 6),
         ];
 
-    /// <summary>
-    /// Ensures the household has its starting accounts and categories.
-    /// </summary>
-    /// <param name="services">The application's service provider.</param>
-    /// <param name="householdId">Household to seed.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A task that completes once the module is ready.</returns>
-    /// <example>
-    /// <code>
-    /// await LedgerSeeder.EnsureSeededAsync(app.Services, householdId);
-    /// </code>
-    /// </example>
+    private static readonly (string Description, string Category, decimal Amount,
+        PlannedAmountMode Mode, int Day)[] StarterExpenseRules =
+        [
+            ("Telefonía móvil", "Internet & Móvil", 25m, PlannedAmountMode.Fixed, 3),
+            ("Luz", "Luz", 70m, PlannedAmountMode.Estimated, 12),
+        ];
+
+    private static readonly (string Name, IncomeSource Source, string Category, decimal Amount,
+        int Day)[] StarterIncomes =
+        [
+            ("Nómina", IncomeSource.Salary, "Nómina", 2530m, 25),
+        ];
+
+    private static readonly (string Category, decimal Amount)[] StarterBudgets =
+        [
+            ("Supermercado", 300m),
+        ];
+
     public static async Task EnsureSeededAsync(
         IServiceProvider services,
-        Guid householdId,
+        int householdId,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -89,7 +73,7 @@ public static class LedgerSeeder
 
     private static async Task EnsureDataAsync(
         LedgerDbContext db,
-        Guid householdId,
+        int householdId,
         CancellationToken cancellationToken)
     {
         var hasAccounts = await db.Accounts
@@ -101,26 +85,30 @@ public static class LedgerSeeder
             return;
         }
 
+        var accounts = new Dictionary<string, Account>(StringComparer.Ordinal);
         var order = 0;
 
         foreach (var (name, type, tracked, buffer) in StarterAccounts)
         {
-            db.Accounts.Add(Account.Create(
+            var account = Account.Create(
                 householdId,
                 name,
                 type,
                 CurrencyCode.Euro,
                 isTracked: tracked,
                 displayOrder: order += 10,
-                minimumBufferTarget: buffer));
+                minimumBufferTarget: buffer);
+
+            db.Accounts.Add(account);
+            accounts[name] = account;
         }
 
-        // The nominal pair. Nobody sees these; they are the other side of every entry, and what
-        // lets income and expense be totals instead of special cases.
         db.Accounts.Add(Account.Create(
             householdId, "Ingresos", AccountType.Income, CurrencyCode.Euro, displayOrder: 900));
         db.Accounts.Add(Account.Create(
             householdId, "Gastos", AccountType.Expense, CurrencyCode.Euro, displayOrder: 910));
+
+        var categories = new Dictionary<string, Category>(StringComparer.Ordinal);
 
         order = 0;
 
@@ -134,18 +122,22 @@ public static class LedgerSeeder
                 displayOrder: order += 100);
 
             db.Categories.Add(parent);
+            categories[parentName] = parent;
 
             var childOrder = parent.DisplayOrder;
 
             foreach (var childName in children)
             {
-                db.Categories.Add(Category.Create(
+                var child = Category.Create(
                     householdId,
                     childName,
                     CategoryKind.Expense,
                     colorIndex: color,
                     displayOrder: childOrder += 1,
-                    parentId: parent.Id));
+                    parentId: parent.Id);
+
+                db.Categories.Add(child);
+                categories[childName] = child;
             }
         }
 
@@ -153,14 +145,65 @@ public static class LedgerSeeder
 
         foreach (var (name, color) in IncomeCategories)
         {
-            db.Categories.Add(Category.Create(
+            var category = Category.Create(
                 householdId,
                 name,
                 CategoryKind.Income,
                 colorIndex: color,
-                displayOrder: order += 10));
+                displayOrder: order += 10);
+
+            db.Categories.Add(category);
+            categories[name] = category;
         }
 
+        SeedPlanning(db, householdId, accounts[MainAccount], categories);
+
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private static void SeedPlanning(
+        LedgerDbContext db,
+        int householdId,
+        Account account,
+        Dictionary<string, Category> categories)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var thisMonth = new DateOnly(today.Year, today.Month, 1);
+
+        foreach (var (description, categoryName, amount, mode, day) in StarterExpenseRules)
+        {
+            db.RecurringRules.Add(RecurringRule.Create(
+                householdId,
+                EntryKind.Expense,
+                RecurrenceFrequency.Monthly,
+                account,
+                categories[categoryName],
+                description,
+                Money.Of(amount, CurrencyCode.Euro),
+                thisMonth.AddDays(day - 1),
+                amountMode: mode));
+        }
+
+        foreach (var (name, source, categoryName, amount, day) in StarterIncomes)
+        {
+            db.Incomes.Add(Income.Create(
+                householdId,
+                name,
+                source,
+                IncomePeriodicity.Monthly,
+                account,
+                categories[categoryName],
+                Money.Of(amount, CurrencyCode.Euro),
+                thisMonth.AddDays(day - 1)));
+        }
+
+        foreach (var (categoryName, amount) in StarterBudgets)
+        {
+            db.CategoryBudgets.Add(CategoryBudget.Create(
+                householdId,
+                categories[categoryName],
+                thisMonth,
+                Money.Of(amount, CurrencyCode.Euro)));
+        }
     }
 }

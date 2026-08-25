@@ -5,17 +5,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace MyHome.Modules.Ledger.Persistence.Configurations;
 
-/// <summary>
-/// Maps <see cref="Posting"/> to the <c>ledger.postings</c> table.
-/// </summary>
-/// <remarks>
-/// Every figure in the product is computed from this table, so amounts are <c>numeric(19,4)</c>:
-/// decimal in the database as well as in the domain. A <c>double precision</c> column would put
-/// the rounding error straight back into the one place <see cref="Money"/> keeps it out of.
-/// </remarks>
 internal sealed class PostingConfiguration : IEntityTypeConfiguration<Posting>
 {
-    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Posting> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -23,7 +14,8 @@ internal sealed class PostingConfiguration : IEntityTypeConfiguration<Posting>
         builder.ToTable("postings");
         builder.HasKey(p => p.Id);
 
-        builder.Property(p => p.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(p => p.Id).HasColumnName("id")
+            .UseHiLo(LedgerDbContext.KeySequence, LedgerDbContext.Schema);
         builder.Property(p => p.JournalEntryId).HasColumnName("journal_entry_id").IsRequired();
         builder.Property(p => p.AccountId).HasColumnName("account_id").IsRequired();
 
@@ -51,11 +43,8 @@ internal sealed class PostingConfiguration : IEntityTypeConfiguration<Posting>
             .HasPrecision(19, Money.OperatingScale)
             .IsRequired();
 
-        // Computed from Amount and Currency.
         builder.Ignore(p => p.Money);
 
-        // Accounts with history are archived, never deleted: losing one side of an entry leaves
-        // the ledger permanently unbalanced.
         builder.HasOne<Account>()
             .WithMany()
             .HasForeignKey(p => p.AccountId)

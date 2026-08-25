@@ -5,12 +5,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace MyHome.Modules.Ledger.Persistence.Configurations;
 
-/// <summary>
-/// Maps <see cref="RecurringRule"/> to the <c>ledger.recurring_rules</c> table.
-/// </summary>
 internal sealed class RecurringRuleConfiguration : IEntityTypeConfiguration<RecurringRule>
 {
-    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<RecurringRule> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -18,7 +14,14 @@ internal sealed class RecurringRuleConfiguration : IEntityTypeConfiguration<Recu
         builder.ToTable("recurring_rules");
         builder.HasKey(r => r.Id);
 
-        builder.Property(r => r.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(r => r.Id).HasColumnName("id")
+            .UseHiLo(LedgerDbContext.KeySequence, LedgerDbContext.Schema);
+
+        builder.Property(r => r.PublicId).HasColumnName("public_id").IsRequired();
+        builder.HasIndex(r => r.PublicId)
+            .IsUnique()
+            .HasDatabaseName("ux_recurring_rules_public_id");
+
         builder.Property(r => r.HouseholdId).HasColumnName("household_id").IsRequired();
 
         builder.Property(r => r.Kind)
@@ -52,8 +55,18 @@ internal sealed class RecurringRuleConfiguration : IEntityTypeConfiguration<Recu
             .HasConversion(currency => currency.Value, value => CurrencyCode.Parse(value))
             .IsRequired();
 
+        builder.Property(r => r.AmountMode)
+            .HasColumnName("amount_mode")
+            .HasMaxLength(16)
+            .HasConversion<string>()
+            .IsRequired();
+
         builder.Property(r => r.DayOfMonth).HasColumnName("day_of_month").IsRequired();
+        builder.Property(r => r.DayToleranceDays)
+            .HasColumnName("day_tolerance_days")
+            .IsRequired();
         builder.Property(r => r.StartsOn).HasColumnName("starts_on").IsRequired();
+        builder.Property(r => r.EndsOn).HasColumnName("ends_on");
         builder.Property(r => r.IsActive).HasColumnName("is_active").IsRequired();
         builder.Property(r => r.CreatedAt).HasColumnName("created_at").IsRequired();
 

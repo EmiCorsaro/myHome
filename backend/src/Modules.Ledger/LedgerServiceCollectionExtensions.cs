@@ -8,38 +8,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MyHome.Modules.Ledger;
 
-/// <summary>
-/// Registers the Ledger module in the dependency injection container.
-/// </summary>
-/// <remarks>
-/// This is the module's only entry point from the composition root. Callers talk to the service
-/// interfaces in <c>MyHome.Modules.Ledger.Application</c> and the shapes in
-/// <c>MyHome.Modules.Ledger.Contracts</c>; everything else is internal and cannot be reached.
-/// </remarks>
 public static class LedgerServiceCollectionExtensions
 {
-    /// <summary>
-    /// Registers the Ledger module's persistence and application services.
-    /// </summary>
-    /// <param name="services">The application's service collection.</param>
-    /// <param name="connectionStringName">
-    /// Name of the PostgreSQL connection string. Aspire injects it under this name.
-    /// </param>
-    /// <returns>The same collection, for chaining.</returns>
-    /// <example>
-    /// <code>
-    /// builder.Services.AddLedgerModule();
-    /// </code>
-    /// </example>
     public static IServiceCollection AddLedgerModule(
         this IServiceCollection services,
         string connectionStringName = "myhomedb")
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // Same physical database as the shared kernel, a different schema and a different
-        // context. Sharing the connection keeps deployment simple today; owning the schema keeps
-        // the option of moving out tomorrow.
         services.AddDbContext<LedgerDbContext>((provider, options) =>
         {
             var configuration = provider.GetRequiredService<IConfiguration>();

@@ -2,46 +2,33 @@ using MyHome.Modules.Shared.Domain;
 
 namespace MyHome.Modules.Ledger.Domain;
 
-/// <summary>
-/// How often a recurring movement repeats.
-/// </summary>
 public enum RecurrenceFrequency
 {
-    /// <summary>Every month.</summary>
     Monthly = 1,
-
-    /// <summary>Every two months.</summary>
     BiMonthly = 2,
-
-    /// <summary>Every three months.</summary>
     Quarterly = 3,
 }
 
-/// <summary>
-/// A movement the household knows will happen again: rent, the gym, the vet insurance.
-/// </summary>
-/// <remarks>
-/// A rule is not an entry: nothing hits the balance because a rule exists. Entries are still
-/// recorded month by month; the rule only says what to expect. That separation is what will let
-/// the projection show a future month without inventing history for it.
-/// </remarks>
 public sealed class RecurringRule
 {
     private RecurringRule(
-        Guid id,
-        Guid householdId,
+        Guid publicId,
+        int householdId,
         EntryKind kind,
         RecurrenceFrequency frequency,
-        Guid accountId,
-        Guid categoryId,
+        int accountId,
+        int categoryId,
         string description,
         decimal amount,
         CurrencyCode currency,
+        PlannedAmountMode amountMode,
         int dayOfMonth,
+        int dayToleranceDays,
         DateOnly startsOn,
+        DateOnly? endsOn,
         DateTimeOffset createdAt)
     {
-        Id = id;
+        PublicId = publicId;
         HouseholdId = householdId;
         Kind = kind;
         Frequency = frequency;
@@ -50,106 +37,111 @@ public sealed class RecurringRule
         Description = description;
         Amount = amount;
         Currency = currency;
+        AmountMode = amountMode;
         DayOfMonth = dayOfMonth;
+        DayToleranceDays = dayToleranceDays;
         StartsOn = startsOn;
+        EndsOn = endsOn;
         CreatedAt = createdAt;
     }
 
-    /// <summary>Rule identifier.</summary>
-    public Guid Id { get; private set; }
+    public int Id { get; private set; }
 
-    /// <summary>Household the rule belongs to.</summary>
-    public Guid HouseholdId { get; private set; }
+    public Guid PublicId { get; private set; }
 
-    /// <summary>Whether it repeats an income or an expense.</summary>
+    public int HouseholdId { get; private set; }
+
     public EntryKind Kind { get; private set; }
 
-    /// <summary>How often it repeats.</summary>
     public RecurrenceFrequency Frequency { get; private set; }
 
-    /// <summary>Account the money moves through.</summary>
-    public Guid AccountId { get; private set; }
+    public int AccountId { get; private set; }
 
-    /// <summary>Category it is classified as.</summary>
-    public Guid CategoryId { get; private set; }
+    public int CategoryId { get; private set; }
 
-    /// <summary>What it is, reused as the description of the entries it generates.</summary>
     public string Description { get; private set; }
 
-    /// <summary>Expected amount, positive.</summary>
     public decimal Amount { get; private set; }
 
-    /// <summary>Currency of the amount.</summary>
     public CurrencyCode Currency { get; private set; }
 
-    /// <summary>
-    /// Day of the month it is expected on, 1 to 28.
-    /// </summary>
-    /// <remarks>
-    /// Capped at 28 so the day exists in every month. Rules that genuinely fall on the last day
-    /// need the negative-day form from the design notes; that comes with the projection.
-    /// </remarks>
+    public PlannedAmountMode AmountMode { get; private set; }
+
     public int DayOfMonth { get; private set; }
 
-    /// <summary>First month the rule applies to.</summary>
+    public int DayToleranceDays { get; private set; }
+
     public DateOnly StartsOn { get; private set; }
 
-    /// <summary>Whether the rule is still in force.</summary>
+    public DateOnly? EndsOn { get; private set; }
+
     public bool IsActive { get; private set; } = true;
 
-    /// <summary>When the rule was created.</summary>
     public DateTimeOffset CreatedAt { get; private set; }
 
-    /// <summary>
-    /// Creates a rule out of a movement the user has just recorded.
-    /// </summary>
-    /// <param name="householdId">Household recording it.</param>
-    /// <param name="kind">Income or expense.</param>
-    /// <param name="frequency">How often it repeats.</param>
-    /// <param name="account">Account the money moves through.</param>
-    /// <param name="category">Category it is classified as.</param>
-    /// <param name="description">What it is. Required.</param>
-    /// <param name="amount">Expected amount. Must be positive.</param>
-    /// <param name="firstOccurrence">The occurrence being recorded now.</param>
-    /// <param name="createdAt">Creation instant. Defaults to now.</param>
-    /// <returns>The new rule.</returns>
-    /// <example>
-    /// <code>
-    /// var rule = RecurringRule.Create(
-    ///     householdId,
-    ///     EntryKind.Expense,
-    ///     RecurrenceFrequency.Monthly,
-    ///     santander,
-    ///     rent,
-    ///     "Alquiler",
-    ///     Money.Of(1439m, CurrencyCode.Euro),
-    ///     new DateOnly(2026, 8, 1));
-    /// </code>
-    /// </example>
     public static RecurringRule Create(
-        Guid householdId,
+        int householdId,
         EntryKind kind,
         RecurrenceFrequency frequency,
         Account account,
         Category category,
         string description,
         Money amount,
-        DateOnly firstOccurrence,
+        DateOnly firstDueDate,
+        PlannedAmountMode amountMode = PlannedAmountMode.Fixed,
+        int dayToleranceDays = PlannedMovement.DefaultDayTolerance,
+        DateOnly? endsOn = null,
         DateTimeOffset? createdAt = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
         ArgumentNullException.ThrowIfNull(account);
         ArgumentNullException.ThrowIfNull(category);
 
+        if (kind is not (EntryKind.Income or EntryKind.Expense))
+        {
+            throw new InvalidOperationException(
+                $"Only income and expense repeat on a schedule; {kind} does not.");
+        }
+
         if (amount.Amount <= 0m)
         {
-            throw new ArgumentException("A rule's amount is positive.", nameof(amount));
+            throw new ArgumentException(
+                "A rule's amount is positive. The direction is expressed by its kind, not by the "
+                    + "sign the caller passes.",
+                nameof(amount));
         }
 
         if (account.HouseholdId != householdId || category.HouseholdId != householdId)
         {
             throw new InvalidOperationException(
                 "Accounts and categories in a rule must belong to the same household.");
+        }
+
+        if (!account.IsReal)
+        {
+            throw new InvalidOperationException(
+                $"'{account.Name}' is nominal: no money is ever expected to move through it.");
+        }
+
+        var expected = kind == EntryKind.Income ? CategoryKind.Income : CategoryKind.Expense;
+
+        if (category.Kind != expected)
+        {
+            throw new InvalidOperationException(
+                $"'{category.Name}' classifies {category.Kind}, and this rule repeats {kind}.");
+        }
+
+        if (amount.Currency != account.Currency)
+        {
+            throw new InvalidOperationException(
+                $"The rule is in {amount.Currency} and '{account.Name}' works in "
+                    + $"{account.Currency}. Converting it needs an explicit exchange rate.");
+        }
+
+        if (endsOn is { } end && end < firstDueDate)
+        {
+            throw new InvalidOperationException(
+                "A rule cannot end before its first occurrence.");
         }
 
         return new RecurringRule(
@@ -162,25 +154,56 @@ public sealed class RecurringRule
             description.Trim(),
             amount.Amount,
             amount.Currency,
-            Math.Clamp(firstOccurrence.Day, 1, 28),
-            new DateOnly(firstOccurrence.Year, firstOccurrence.Month, 1),
+            amountMode,
+            Math.Clamp(firstDueDate.Day, 1, 28),
+            Math.Max(0, dayToleranceDays),
+            new DateOnly(firstDueDate.Year, firstDueDate.Month, 1),
+            endsOn,
             createdAt ?? DateTimeOffset.UtcNow);
     }
 
-    /// <summary>Stops the rule without deleting the entries it has already produced.</summary>
+    public Money ExpectedAmount() => Money.Of(Amount, Currency);
+
     public void Deactivate() => IsActive = false;
 
-    /// <summary>
-    /// Whether the rule is expected to fire in the given month.
-    /// </summary>
-    /// <param name="month">Any day of the month to check.</param>
-    /// <returns><see langword="true"/> if that month is one of its occurrences.</returns>
-    /// <example>
-    /// <code>
-    /// // Quarterly rule starting in August: true for August and November, false for September.
-    /// rule.OccursIn(new DateOnly(2026, 11, 1));
-    /// </code>
-    /// </example>
+    public void Reactivate() => IsActive = true;
+
+    public void Amend(Money amount, int? dayOfMonth = null, PlannedAmountMode? amountMode = null)
+    {
+        if (amount.Amount <= 0m)
+        {
+            throw new ArgumentException("A rule's amount is positive.", nameof(amount));
+        }
+
+        if (amount.Currency != Currency)
+        {
+            throw new InvalidOperationException(
+                $"The rule is declared in {Currency} and cannot be amended in {amount.Currency}.");
+        }
+
+        Amount = amount.Amount;
+
+        if (dayOfMonth is { } day)
+        {
+            DayOfMonth = Math.Clamp(day, 1, 28);
+        }
+
+        if (amountMode is { } mode)
+        {
+            AmountMode = mode;
+        }
+    }
+
+    public void ScheduleEnd(DateOnly? endsOn)
+    {
+        if (endsOn is { } end && end < StartsOn)
+        {
+            throw new InvalidOperationException("A rule cannot end before it starts.");
+        }
+
+        EndsOn = endsOn;
+    }
+
     public bool OccursIn(DateOnly month)
     {
         if (!IsActive)
@@ -190,6 +213,41 @@ public sealed class RecurringRule
 
         var elapsed = ((month.Year - StartsOn.Year) * 12) + month.Month - StartsOn.Month;
 
-        return elapsed >= 0 && elapsed % (int)Frequency == 0;
+        if (elapsed < 0 || elapsed % (int)Frequency != 0)
+        {
+            return false;
+        }
+
+        return EndsOn is not { } endsOn || DueDateIn(month) <= endsOn;
     }
+
+    public IEnumerable<DateOnly> OccurrencesBetween(DateOnly from, DateOnly to)
+    {
+        if (!IsActive || from > to)
+        {
+            yield break;
+        }
+
+        var interval = (int)Frequency;
+        var elapsed = ((from.Year - StartsOn.Year) * 12) + from.Month - StartsOn.Month;
+
+        var skipped = elapsed <= 0 ? 0 : elapsed / interval * interval;
+
+        for (var month = StartsOn.AddMonths(skipped); ; month = month.AddMonths(interval))
+        {
+            var due = DueDateIn(month);
+
+            if (due > to || (EndsOn is { } endsOn && due > endsOn))
+            {
+                yield break;
+            }
+
+            if (due >= from)
+            {
+                yield return due;
+            }
+        }
+    }
+
+    private DateOnly DueDateIn(DateOnly month) => new(month.Year, month.Month, DayOfMonth);
 }

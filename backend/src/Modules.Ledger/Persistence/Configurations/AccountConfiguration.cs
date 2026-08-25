@@ -5,12 +5,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace MyHome.Modules.Ledger.Persistence.Configurations;
 
-/// <summary>
-/// Maps <see cref="Account"/> to the <c>ledger.accounts</c> table.
-/// </summary>
 internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 {
-    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Account> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -18,16 +14,18 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.ToTable("accounts");
         builder.HasKey(a => a.Id);
 
-        builder.Property(a => a.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(a => a.Id).HasColumnName("id")
+            .UseHiLo(LedgerDbContext.KeySequence, LedgerDbContext.Schema);
 
-        // No foreign key to the households table: a cross-schema constraint is exactly what would
-        // make extracting this module expensive later.
+        builder.Property(a => a.PublicId).HasColumnName("public_id").IsRequired();
+        builder.HasIndex(a => a.PublicId)
+            .IsUnique()
+            .HasDatabaseName("ux_accounts_public_id");
+
         builder.Property(a => a.HouseholdId).HasColumnName("household_id").IsRequired();
 
         builder.Property(a => a.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
 
-        // Enums as text. An ad-hoc query reads "checking" instead of 1, and reordering the enum
-        // cannot silently reinterpret existing rows.
         builder.Property(a => a.Type)
             .HasColumnName("type")
             .HasMaxLength(20)
@@ -50,7 +48,6 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.Property(a => a.IsArchived).HasColumnName("is_archived").IsRequired();
         builder.Property(a => a.CreatedAt).HasColumnName("created_at").IsRequired();
 
-        // Every query in the module filters by household first.
         builder.HasIndex(a => new { a.HouseholdId, a.DisplayOrder }).HasDatabaseName("ix_accounts_household");
     }
 }

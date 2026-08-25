@@ -2,10 +2,6 @@ using MyHome.Modules.Shared.Domain;
 
 namespace MyHome.Modules.Shared.Tests;
 
-/// <summary>
-/// Tests for <see cref="Money"/>. It is the type everything else hangs from: if a cent is lost
-/// here, it is lost across the whole system.
-/// </summary>
 public sealed class MoneyTests
 {
     [Fact(DisplayName = "Adding different currencies is an error, not an implicit conversion")]

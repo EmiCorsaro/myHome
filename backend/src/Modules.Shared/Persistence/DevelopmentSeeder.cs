@@ -4,30 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MyHome.Modules.Shared.Persistence;
 
-/// <summary>
-/// Creates a working household when there is none.
-/// </summary>
-/// <remarks>
-/// Development only, and data only: the schema is <see cref="SharedSchema"/>'s job and has already
-/// been applied by the time this runs.
-/// </remarks>
 public static class DevelopmentSeeder
 {
-    /// <summary>
-    /// Ensures at least one household exists, opening its own scope.
-    /// </summary>
-    /// <param name="services">The application's service provider.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>
-    /// The identifier of the working household, so the composition root can hand it to each
-    /// module's own seeder without querying for it.
-    /// </returns>
-    /// <remarks>
-    /// Exists so the composition root never names the data context: the Api project picks up no
-    /// persistence dependency and the architecture test asserting that keeps passing. Returns a
-    /// <see cref="Guid"/> rather than the entity for the same reason.
-    /// </remarks>
-    public static async Task<Guid> EnsureSeededAsync(
+    public static async Task<int> EnsureSeededAsync(
         IServiceProvider services,
         CancellationToken cancellationToken = default)
     {
@@ -41,12 +20,6 @@ public static class DevelopmentSeeder
         return household.Id;
     }
 
-    /// <summary>
-    /// Ensures at least one household exists.
-    /// </summary>
-    /// <param name="db">Shared data context.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The existing household, or the newly created one.</returns>
     public static async Task<Household> EnsureSeededAsync(
         SharedDbContext db,
         CancellationToken cancellationToken = default)

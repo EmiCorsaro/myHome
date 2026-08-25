@@ -6,30 +6,8 @@ using MyHome.Modules.Ledger.Contracts.Expenses;
 
 namespace MyHome.Api.Endpoints;
 
-/// <summary>
-/// Ledger endpoints: dashboard, accounts, categories and expense registration.
-/// </summary>
-/// <remarks>
-/// Each endpoint takes the request, calls one service, maps the result to a status code and
-/// returns. No domain conditionals, no totals, no database.
-/// <para>
-/// Validation errors are not handled here either: the service throws and one exception handler
-/// turns that into a 400 with the errors per field. Doing it endpoint by endpoint ends with a
-/// dozen slightly different error shapes.
-/// </para>
-/// </remarks>
 public static class LedgerEndpoints
 {
-    /// <summary>
-    /// Registers the ledger endpoints.
-    /// </summary>
-    /// <param name="app">The application's route builder.</param>
-    /// <returns>The same builder, for chaining.</returns>
-    /// <example>
-    /// <code>
-    /// app.MapLedgerEndpoints();
-    /// </code>
-    /// </example>
     public static IEndpointRouteBuilder MapLedgerEndpoints(this IEndpointRouteBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);
@@ -104,7 +82,6 @@ public static class LedgerEndpoints
             .RegisterAsync(request, cancellationToken)
             .ConfigureAwait(false);
 
-        // 200 and not 201 when the key had already been used: nothing was created this time.
         return expense.WasAlreadyRegistered
             ? Results.Ok(expense)
             : Results.Created($"/api/expenses/{expense.Id}", expense);
