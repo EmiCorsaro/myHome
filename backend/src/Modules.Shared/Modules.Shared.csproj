@@ -3,6 +3,12 @@
   <!--
     Concepts every module needs and none of them owns: Money, Household, Member, tenancy.
     Depends on no module, and must stay that way.
+
+    Same layout as every module — Contracts/, Domain/, Application/{Interfaces,Services},
+    Persistence/ — but with one difference worth knowing: here those folders are organisation, not
+    a wall. This is a shared kernel, so callers are allowed to use all of it (Ledger.Domain builds
+    Money directly) and the architecture tests enforce the boundary rules on modules, not on this
+    project. See SharedModule.
   -->
 
   <PropertyGroup>

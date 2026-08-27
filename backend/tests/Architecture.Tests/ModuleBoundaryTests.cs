@@ -3,28 +3,21 @@ using NetArchTest.Rules;
 
 namespace MyHome.Architecture.Tests;
 
-/// <summary>
-/// The modular monolith's boundaries, checked on every build.
-/// </summary>
-/// <remarks>
-/// Written from the first commit, while nothing violates them yet. Adding them once twenty screens
-/// exist turns each one into archaeology and negotiation.
-/// <para>
-/// What they protect is not purity: it is that extracting a module to its own service stays a
-/// deployment change instead of a redesign.
-/// </para>
-/// </remarks>
 public sealed class ModuleBoundaryTests
 {
-    private static readonly Assembly Shared = typeof(Modules.Shared.Money).Assembly;
+    private static readonly Assembly Shared = typeof(Modules.Shared.Domain.Money).Assembly;
     private static readonly Assembly Api = typeof(Program).Assembly;
     private static readonly Assembly Ledger = Assembly.Load("MyHome.Modules.Ledger");
 
-    /// <summary>Every module assembly in the solution, discovered by name.</summary>
     private static readonly Assembly[] Modules = [Ledger];
 
-    /// <summary>Suffix marking the part of a module other modules are allowed to reach.</summary>
     private const string ContractsSuffix = ".Contracts";
+
+    private const string ApplicationSuffix = ".Application";
+
+    private const string DomainSuffix = ".Domain";
+
+    private const string PersistenceSuffix = ".Persistence";
 
     [Fact(DisplayName = "The shared kernel knows about no module")]
     public void shared_kernel_does_not_depend_on_modules()
@@ -43,11 +36,6 @@ public sealed class ModuleBoundaryTests
     [Fact(DisplayName = "A module's contracts do not depend on its implementation")]
     public void contracts_do_not_depend_on_implementation()
     {
-        // Replaces the separate Contracts project. That made the rule impossible to break; this
-        // makes it impossible to break unnoticed, and costs one project less to explain.
-        //
-        // It matters inside a single module too: the contracts are what clients see, and a DTO
-        // that leaks a domain entity turns every internal rename into a breaking API change.
         foreach (var module in Modules)
         {
             var contractsNamespace = module.GetName().Name + ContractsSuffix;
@@ -66,16 +54,88 @@ public sealed class ModuleBoundaryTests
         }
     }
 
-    [Fact(DisplayName = "Modules reach each other only through contracts")]
-    public void modules_reach_each_other_only_through_contracts()
+    [Fact(DisplayName = "A module's services are not reachable from outside")]
+    public void a_modules_services_are_not_reachable_from_outside()
     {
-        // Dormant while there is one module. Written now because when the second one arrives it
-        // would have to be negotiated against code that already breaks it.
+        foreach (var module in Modules)
+        {
+            var applicationNamespace = module.GetName().Name + ApplicationSuffix;
+
+            var result = Types.InAssembly(module)
+                .That()
+                .ResideInNamespaceStartingWith(applicationNamespace)
+                .And()
+                .ArePublic()
+                .Should()
+                .BeInterfaces()
+                .GetResult();
+
+            AssertSuccess(
+                result,
+                $"Only interfaces may be public in {module.GetName().Name}'s application layer. " +
+                "A public service turns an implementation detail into part of the module's API, " +
+                "and callers will bypass the interface the moment it is convenient.");
+        }
+    }
+
+    [Fact(DisplayName = "A module's domain depends on nothing but the shared kernel")]
+    public void a_modules_domain_depends_on_nothing()
+    {
+        foreach (var module in Modules)
+        {
+            var root = module.GetName().Name;
+
+            var result = Types.InAssembly(module)
+                .That()
+                .ResideInNamespaceStartingWith(root + DomainSuffix)
+                .Should()
+                .NotHaveDependencyOnAny(
+                    "Microsoft.EntityFrameworkCore",
+                    "Npgsql",
+                    "FluentValidation",
+                    root + ApplicationSuffix,
+                    root + PersistenceSuffix)
+                .GetResult();
+
+            AssertSuccess(
+                result,
+                $"The domain of {root} must be runnable without a database and without a " +
+                "container: it is where the rules live, and a rule that needs EF Core to run " +
+                "can only be tested by starting one.");
+        }
+    }
+
+    [Fact(DisplayName = "A module's published interfaces do not expose its domain")]
+    public void published_interfaces_do_not_expose_the_domain()
+    {
+        foreach (var module in Modules)
+        {
+            var applicationNamespace = module.GetName().Name + ApplicationSuffix;
+
+            var result = Types.InAssembly(module)
+                .That()
+                .ResideInNamespaceStartingWith(applicationNamespace)
+                .And()
+                .AreInterfaces()
+                .Should()
+                .NotHaveDependencyOnAny([.. PrivateNamespaces(module)])
+                .GetResult();
+
+            AssertSuccess(
+                result,
+                $"The published interfaces of {module.GetName().Name} must speak in contracts, " +
+                "not in entities or persistence types.");
+        }
+    }
+
+    [Fact(DisplayName = "Modules reach each other only through the published surface")]
+    public void modules_reach_each_other_only_through_the_published_surface()
+    {
         foreach (var module in Modules)
         {
             var forbidden = Modules
                 .Where(other => other != module)
-                .SelectMany(ImplementationNamespaces)
+                .SelectMany(PrivateNamespaces)
                 .ToArray();
 
             if (forbidden.Length == 0)
@@ -95,25 +155,26 @@ public sealed class ModuleBoundaryTests
         }
     }
 
-    /// <summary>
-    /// The namespaces of a module that nobody outside it may depend on: everything except its
-    /// contracts.
-    /// </summary>
-    /// <param name="module">Module assembly.</param>
-    /// <returns>Top-level implementation namespaces, for instance <c>MyHome.Modules.Ledger.Domain</c>.</returns>
-    private static IEnumerable<string> ImplementationNamespaces(Assembly module)
+    private static List<string> ImplementationNamespaces(Assembly module) =>
+        TopLevelNamespaces(module, module.GetName().Name + ContractsSuffix);
+
+    private static List<string> PrivateNamespaces(Assembly module) =>
+        TopLevelNamespaces(
+            module,
+            module.GetName().Name + ContractsSuffix,
+            module.GetName().Name + ApplicationSuffix);
+
+    private static List<string> TopLevelNamespaces(Assembly module, params string[] excluded)
     {
         var root = module.GetName().Name + ".";
-        var contracts = module.GetName().Name + ContractsSuffix;
 
         return module.GetTypes()
             .Select(type => type.Namespace)
             .Where(name => name is not null && name.StartsWith(root, StringComparison.Ordinal))
             .Select(name => name!)
-            .Where(name => !name.StartsWith(contracts, StringComparison.Ordinal))
+            .Where(name => !excluded.Any(
+                prefix => name.StartsWith(prefix, StringComparison.Ordinal)))
 
-            // First segment after the module root only (Domain, Application, Persistence):
-            // NetArchTest matches by prefix, so nested namespaces are already covered.
             .Select(name => root + name[root.Length..].Split('.')[0])
             .Distinct(StringComparer.Ordinal)
             .ToList();

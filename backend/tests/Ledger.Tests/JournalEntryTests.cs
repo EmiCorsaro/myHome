@@ -1,18 +1,14 @@
+using System.Reflection;
 using MyHome.Modules.Ledger.Domain;
-using MyHome.Modules.Shared;
+using MyHome.Modules.Shared.Domain;
 
 namespace MyHome.Ledger.Tests;
 
-/// <summary>
-/// The rules that make an expense an expense.
-/// </summary>
-/// <remarks>
-/// Invariant I-1, made executable. Read them before adding a second kind of entry: whatever it
-/// records has to balance the same way, and the proof looks like the first test here.
-/// </remarks>
 public sealed class JournalEntryTests
 {
-    private static readonly Guid HouseholdId = Guid.CreateVersion7();
+    private const int HouseholdId = 1;
+
+    private static int _nextKey;
 
     [Fact(DisplayName = "An expense produces two postings that cancel out")]
     public void expense_produces_two_postings_that_cancel_out()
@@ -96,12 +92,11 @@ public sealed class JournalEntryTests
     public void an_account_from_another_household_cannot_be_used()
     {
         var foreignBank = Account.Create(
-            Guid.CreateVersion7(),
+            HouseholdId + 1,
             "Someone else's account",
             AccountType.Checking,
             CurrencyCode.Euro);
 
-        // In the domain so that one service forgetting a filter is not enough to leak.
         Assert.Throws<InvalidOperationException>(() => JournalEntry.RegisterExpense(
             HouseholdId,
             new DateOnly(2026, 8, 14),
@@ -152,11 +147,21 @@ public sealed class JournalEntryTests
             Money.Of(amount, CurrencyCode.Euro));
 
     private static Account Bank() =>
-        Account.Create(HouseholdId, "Joint account", AccountType.Checking, CurrencyCode.Euro);
+        WithKey(Account.Create(
+            HouseholdId, "Joint account", AccountType.Checking, CurrencyCode.Euro));
 
     private static Account Expenses() =>
-        Account.Create(HouseholdId, "Expenses", AccountType.Expense, CurrencyCode.Euro);
+        WithKey(Account.Create(HouseholdId, "Expenses", AccountType.Expense, CurrencyCode.Euro));
 
     private static Category Groceries() =>
-        Category.Create(HouseholdId, "Groceries", CategoryKind.Expense, 2);
+        WithKey(Category.Create(HouseholdId, "Groceries", CategoryKind.Expense, 2));
+
+    private static T WithKey<T>(T entity)
+    {
+        typeof(T).GetProperty(nameof(Account.Id), BindingFlags.Public | BindingFlags.Instance)!
+            .SetMethod!
+            .Invoke(entity, [++_nextKey]);
+
+        return entity;
+    }
 }

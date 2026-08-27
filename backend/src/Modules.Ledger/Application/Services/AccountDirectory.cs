@@ -1,4 +1,3 @@
-using MyHome.Modules.Ledger.Contracts;
 using MyHome.Modules.Ledger.Contracts.Accounts;
 using MyHome.Modules.Ledger.Domain;
 using MyHome.Modules.Ledger.Persistence;
@@ -7,15 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MyHome.Modules.Ledger.Application;
 
-/// <summary>
-/// Lists accounts with their balances.
-/// </summary>
-/// <param name="db">Ledger data context.</param>
-/// <param name="tenant">The current request's household.</param>
 internal sealed class AccountDirectory(LedgerDbContext db, ITenantContext tenant)
     : IAccountDirectory
 {
-    /// <inheritdoc />
     public async Task<IReadOnlyList<AccountSummary>> ListRealAccountsAsync(
         CancellationToken cancellationToken = default)
     {
@@ -37,20 +30,9 @@ internal sealed class AccountDirectory(LedgerDbContext db, ITenantContext tenant
         return [.. accounts.Select(a => ToSummary(a, balances.GetValueOrDefault(a.Id)))];
     }
 
-    /// <summary>
-    /// Sums every posting of the household, grouped by account.
-    /// </summary>
-    /// <param name="db">Ledger data context.</param>
-    /// <param name="householdId">Household to compute for.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Balance per account. Accounts with no postings are absent, meaning zero.</returns>
-    /// <remarks>
-    /// One aggregation for all accounts rather than one query each. Invisible at four accounts,
-    /// but it stays sane at forty and leaves no excuse for a stored balance column.
-    /// </remarks>
-    internal static async Task<Dictionary<Guid, decimal>> BalancesByAccountAsync(
+    internal static async Task<Dictionary<int, decimal>> BalancesByAccountAsync(
         LedgerDbContext db,
-        Guid householdId,
+        int householdId,
         CancellationToken cancellationToken)
     {
         var rows = await db.Postings
@@ -63,14 +45,8 @@ internal sealed class AccountDirectory(LedgerDbContext db, ITenantContext tenant
         return rows.ToDictionary(r => r.AccountId, r => r.Balance);
     }
 
-    /// <summary>
-    /// Maps an account and its balance to the published contract.
-    /// </summary>
-    /// <param name="account">Account to map.</param>
-    /// <param name="balance">Its balance.</param>
-    /// <returns>The summary.</returns>
     internal static AccountSummary ToSummary(Account account, decimal balance) => new(
-        account.Id,
+        account.PublicId,
         account.Name,
         account.Type.ToContractName(),
         account.Currency.Value,

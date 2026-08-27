@@ -1,4 +1,3 @@
-using MyHome.Modules.Ledger.Contracts;
 using MyHome.Modules.Ledger.Contracts.Categories;
 using MyHome.Modules.Ledger.Domain;
 using MyHome.Modules.Ledger.Persistence;
@@ -7,15 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MyHome.Modules.Ledger.Application;
 
-/// <summary>
-/// Lists the household's categories.
-/// </summary>
-/// <param name="db">Ledger data context.</param>
-/// <param name="tenant">The current request's household.</param>
 internal sealed class CategoryDirectory(LedgerDbContext db, ITenantContext tenant)
     : ICategoryDirectory
 {
-    /// <inheritdoc />
     public async Task<IReadOnlyList<CategorySummary>> ListExpenseCategoriesAsync(
         CancellationToken cancellationToken = default)
     {
@@ -30,18 +23,20 @@ internal sealed class CategoryDirectory(LedgerDbContext db, ITenantContext tenan
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. categories.Select(ToSummary)];
+        var publicIds = categories.ToDictionary(c => c.Id, c => c.PublicId);
+
+        return
+        [
+            .. categories.Select(c => ToSummary(
+                c,
+                c.ParentId is { } parentId ? publicIds.GetValueOrDefault(parentId) : null)),
+        ];
     }
 
-    /// <summary>
-    /// Maps a category to the published contract.
-    /// </summary>
-    /// <param name="category">Category to map.</param>
-    /// <returns>The summary.</returns>
-    internal static CategorySummary ToSummary(Category category) => new(
-        category.Id,
+    internal static CategorySummary ToSummary(Category category, Guid? parentPublicId) => new(
+        category.PublicId,
         category.Name,
         category.Kind.ToContractName(),
         category.ColorIndex,
-        category.ParentId);
+        parentPublicId);
 }

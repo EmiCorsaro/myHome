@@ -1,25 +1,18 @@
+using MyHome.Modules.Shared.Contracts.Households;
 using MyHome.Modules.Shared.Persistence;
 using MyHome.Modules.Shared.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
 namespace MyHome.Modules.Shared.Application;
 
-/// <summary>
-/// Implementation of <see cref="IHouseholdDirectory"/> over <see cref="SharedDbContext"/>.
-/// </summary>
-/// <param name="db">Shared data context.</param>
-/// <param name="tenant">Tenant context for the current request.</param>
-public sealed class HouseholdDirectory(SharedDbContext db, ITenantContext tenant)
+internal sealed class HouseholdDirectory(SharedDbContext db, ITenantContext tenant)
     : IHouseholdDirectory
 {
-    /// <inheritdoc />
     public async Task<HouseholdSummary?> GetCurrentAsync(
         CancellationToken cancellationToken = default)
     {
         var householdId = tenant.RequireHouseholdId();
 
-        // AsNoTracking because this is a read: without change tracking EF skips building the
-        // identity graph, and the query is noticeably cheaper.
         var household = await db.Households
             .AsNoTracking()
             .Include(h => h.Members)
@@ -34,17 +27,33 @@ public sealed class HouseholdDirectory(SharedDbContext db, ITenantContext tenant
         var members = household.Members
             .OrderBy(m => m.DisplayOrder)
             .Select(m => new HouseholdMemberSummary(
-                m.Id,
+                m.PublicId,
                 m.DisplayName,
                 m.Role.ToString(),
                 m.UserId.HasValue))
             .ToList();
 
         return new HouseholdSummary(
-            household.Id,
+            household.PublicId,
             household.Name,
             household.BaseCurrency.Value,
             household.TimeZoneId,
             members);
+    }
+
+    public async Task<int?> ResolveMemberAsync(
+        Guid publicId,
+        CancellationToken cancellationToken = default)
+    {
+        var householdId = tenant.RequireHouseholdId();
+
+        var id = await db.Members
+            .AsNoTracking()
+            .Where(m => m.PublicId == publicId && m.HouseholdId == householdId)
+            .Select(m => (int?)m.Id)
+            .SingleOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return id;
     }
 }
