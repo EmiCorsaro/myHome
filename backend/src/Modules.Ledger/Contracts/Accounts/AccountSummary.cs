@@ -24,4 +24,4 @@ public sealed record AccountSummary(
     string Currency,
     decimal Balance,
     bool IsTracked,
-    decimal? MinimumBufferTarget);
+    decimal? MinimumBufferTarget); 

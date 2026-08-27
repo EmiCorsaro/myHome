@@ -9,7 +9,6 @@
   discarded kilobytes. The parameter stays for the day a genuinely slow endpoint earns it back.
 */
 
-
 /** Validation messages keyed by the field they belong to. */
 export type FieldErrors = Record<string, string[]>;
 
