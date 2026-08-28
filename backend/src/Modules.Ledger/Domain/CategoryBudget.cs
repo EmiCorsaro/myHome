@@ -8,7 +8,7 @@ public enum BudgetScope
     Unplanned = 2,
 }
 
-public sealed class CategoryBudget
+public sealed class CategoryBudget : AuditedTenantEntity
 {
     private CategoryBudget(
         Guid publicId,
@@ -30,12 +30,6 @@ public sealed class CategoryBudget
         CreatedAt = createdAt;
     }
 
-    public int Id { get; private set; }
-
-    public Guid PublicId { get; private set; }
-
-    public int HouseholdId { get; private set; }
-
     public int CategoryId { get; private set; }
 
     public DateOnly PeriodStart { get; private set; }
@@ -45,8 +39,6 @@ public sealed class CategoryBudget
     public CurrencyCode Currency { get; private set; }
 
     public BudgetScope Scope { get; private set; }
-
-    public DateTimeOffset CreatedAt { get; private set; }
 
     public DateOnly PeriodEnd => PeriodStart.AddMonths(1).AddDays(-1);
 

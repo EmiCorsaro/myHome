@@ -34,6 +34,7 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(c => c.ColorIndex).HasColumnName("color_index").IsRequired();
         builder.Property(c => c.DisplayOrder).HasColumnName("display_order").IsRequired();
         builder.Property(c => c.IsArchived).HasColumnName("is_archived").IsRequired();
+        builder.Property(c => c.CreatedAt).HasColumnName("created_at").IsRequired();
 
         builder.HasOne<Category>()
             .WithMany()

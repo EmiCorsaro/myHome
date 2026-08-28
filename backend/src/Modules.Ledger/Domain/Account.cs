@@ -2,7 +2,7 @@ using MyHome.Modules.Shared.Domain;
 
 namespace MyHome.Modules.Ledger.Domain;
 
-public sealed class Account
+public sealed class Account : AuditedTenantEntity
 {
     private Account(
         Guid publicId,
@@ -24,12 +24,6 @@ public sealed class Account
         CreatedAt = createdAt;
     }
 
-    public int Id { get; private set; }
-
-    public Guid PublicId { get; private set; }
-
-    public int HouseholdId { get; private set; }
-
     public string Name { get; private set; }
 
     public AccountType Type { get; private set; }
@@ -43,8 +37,6 @@ public sealed class Account
     public int DisplayOrder { get; private set; }
 
     public bool IsArchived { get; private set; }
-
-    public DateTimeOffset CreatedAt { get; private set; }
 
     public bool IsReal => Type is AccountType.Checking
         or AccountType.Savings

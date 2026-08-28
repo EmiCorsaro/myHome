@@ -9,7 +9,7 @@ public enum PlannedMovementStatus
     Skipped = 3,
 }
 
-public sealed class PlannedMovement
+public sealed class PlannedMovement : AuditedTenantEntity
 {
     public const int DefaultDayTolerance = 5;
 
@@ -45,12 +45,6 @@ public sealed class PlannedMovement
         CreatedAt = createdAt;
     }
 
-    public int Id { get; private set; }
-
-    public Guid PublicId { get; private set; }
-
-    public int HouseholdId { get; private set; }
-
     public int? RuleId { get; private set; }
 
     public int? IncomeId { get; private set; }
@@ -82,8 +76,6 @@ public sealed class PlannedMovement
     public decimal? ActualAmount { get; private set; }
 
     public DateTimeOffset? SettledAt { get; private set; }
-
-    public DateTimeOffset CreatedAt { get; private set; }
 
     public decimal? Variance => Kind == EntryKind.Income
         ? ExpectedAmount - ActualAmount

@@ -10,7 +10,7 @@ public enum EntryKind
     Opening = 4,
 }
 
-public sealed class JournalEntry
+public sealed class JournalEntry : AuditedTenantEntity
 {
     private readonly List<Posting> _postings = [];
 
@@ -30,19 +30,11 @@ public sealed class JournalEntry
         CreatedAt = createdAt;
     }
 
-    public int Id { get; private set; }
-
-    public Guid PublicId { get; private set; }
-
-    public int HouseholdId { get; private set; }
-
     public EntryKind Kind { get; private set; }
 
     public DateOnly OccurredOn { get; private set; }
 
     public string Description { get; private set; }
-
-    public DateTimeOffset CreatedAt { get; private set; }
 
     public string? ClientMutationId { get; private set; }
 
