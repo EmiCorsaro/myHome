@@ -9,7 +9,7 @@ public enum RecurrenceFrequency
     Quarterly = 3,
 }
 
-public sealed class RecurringRule
+public sealed class RecurringRule : AuditedTenantEntity
 {
     private RecurringRule(
         Guid publicId,
@@ -45,12 +45,6 @@ public sealed class RecurringRule
         CreatedAt = createdAt;
     }
 
-    public int Id { get; private set; }
-
-    public Guid PublicId { get; private set; }
-
-    public int HouseholdId { get; private set; }
-
     public EntryKind Kind { get; private set; }
 
     public RecurrenceFrequency Frequency { get; private set; }
@@ -76,8 +70,6 @@ public sealed class RecurringRule
     public DateOnly? EndsOn { get; private set; }
 
     public bool IsActive { get; private set; } = true;
-
-    public DateTimeOffset CreatedAt { get; private set; }
 
     public static RecurringRule Create(
         int householdId,

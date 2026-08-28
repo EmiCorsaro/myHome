@@ -2,7 +2,7 @@ using MyHome.Modules.Shared.Domain;
 
 namespace MyHome.Modules.Ledger.Domain;
 
-public sealed class Posting
+public sealed class Posting : Entity
 {
     private Posting(int accountId, decimal amount, CurrencyCode currency)
     {
@@ -10,8 +10,6 @@ public sealed class Posting
         Amount = amount;
         Currency = currency;
     }
-
-    public int Id { get; private set; }
 
     public int JournalEntryId { get; private set; }
 

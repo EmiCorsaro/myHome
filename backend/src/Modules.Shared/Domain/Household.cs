@@ -1,6 +1,6 @@
 namespace MyHome.Modules.Shared.Domain;
 
-public sealed class Household
+public sealed class Household : Entity
 {
     private readonly List<HouseholdMember> _members = [];
 
@@ -17,8 +17,6 @@ public sealed class Household
         TimeZoneId = timeZoneId;
         CreatedAt = createdAt;
     }
-
-    public int Id { get; private set; }
 
     public Guid PublicId { get; private set; }
 
