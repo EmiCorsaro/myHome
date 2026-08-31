@@ -13,6 +13,7 @@ import {
 } from "@myhome/ui";
 import { useState } from "react";
 import { NewExpenseDialog } from "../expenses/NewExpenseDialog";
+import { NewIncomeDialog } from "../income/NewIncomeDialog";
 import { formatMonth, formatShortDate, monthKey, shiftMonth } from "../../lib/format";
 import { useDashboard, type AccountSummary, type LedgerEntrySummary } from "./useDashboard";
 
@@ -28,6 +29,7 @@ import { useDashboard, type AccountSummary, type LedgerEntrySummary } from "./us
 export function DashboardPage() {
   const [month, setMonth] = useState(monthKey);
   const [isAddingExpense, setIsAddingExpense] = useState(false);
+  const [isAddingIncome, setIsAddingIncome] = useState(false);
 
   const { data, isPending, error } = useDashboard(month);
   const isCurrentMonth = month === monthKey();
@@ -77,7 +79,7 @@ export function DashboardPage() {
             </div>
 
             {/* Next sub-phase. Disabled rather than hidden so the layout does not shift later. */}
-            <Button disabled title="Disponible en la próxima etapa">
+            <Button variant="primary" onClick={() => setIsAddingIncome(true)}>
               Añadir ingreso
             </Button>
             <Button variant="primary" onClick={() => setIsAddingExpense(true)}>
@@ -180,6 +182,11 @@ export function DashboardPage() {
       <NewExpenseDialog
         open={isAddingExpense}
         onClose={() => setIsAddingExpense(false)}
+        month={month}
+      />
+      <NewIncomeDialog
+        open={isAddingIncome}
+        onClose={() => setIsAddingIncome(false)}
         month={month}
       />
     </div>

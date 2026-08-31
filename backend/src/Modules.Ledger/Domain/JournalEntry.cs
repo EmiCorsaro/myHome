@@ -30,6 +30,11 @@ public sealed class JournalEntry
         CreatedAt = createdAt;
     }
 
+    public JournalEntry()
+    {
+        Description = string.Empty;
+    }
+
     public int Id { get; private set; }
 
     public Guid PublicId { get; private set; }
@@ -105,27 +110,114 @@ public sealed class JournalEntry
                     + $"{paidFrom.Currency}. Converting it needs an explicit exchange rate.");
         }
 
+        /* var entry = new JournalEntry(
+             Guid.CreateVersion7(),
+             householdId,
+             EntryKind.Expense,
+             occurredOn,
+             description.Trim(),
+             createdAt ?? DateTimeOffset.UtcNow)
+         {
+             ClientMutationId = clientMutationId,
+             RecurringRule = recurringRule,
+         };
+
+         entry._postings.Add(Posting.Create(paidFrom.Id, category.Id, -amount, memberId: memberId));
+         entry._postings.Add(
+             Posting.Create(expenseAccount.Id, category.Id, amount, memberId));
+
+         entry.EnsureBalanced();*/
+
+        return new JournalEntry();
+    }
+
+    ///<summary>
+    /// Income journal entry
+    ///</summary>
+    public static JournalEntry RegisterIncome(
+        int householdId,
+        DateOnly occurredOn,
+        string description,
+        Account paidFrom,
+        Account incomeAccount,
+        Category category,
+        Money amount,
+        int? memberId = null,
+        string? clientMutationId = null,
+        int? recurringRuleId = null,
+        DateTimeOffset? createdAt = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(description);
+        ArgumentNullException.ThrowIfNull(paidFrom);
+        ArgumentNullException.ThrowIfNull(incomeAccount);
+        ArgumentNullException.ThrowIfNull(category);
+
+        if (amount.Amount <= 0m)
+        {
+            throw new ArgumentException(
+                "The amount of an expense is positive. The direction is expressed by the entry, "
+                    + "not by the sign the caller passes.",
+                nameof(amount));
+        }
+
+        EnsureBelongsToHousehold(householdId, paidFrom, incomeAccount, category);
+
+        if (!paidFrom.IsReal)
+        {
+            throw new InvalidOperationException(
+                $"'{paidFrom.Name}' is not an account money can leave: it is nominal.");
+        }
+
+        if (incomeAccount.Type != AccountType.Income)
+        {
+            throw new InvalidOperationException(
+                $"'{incomeAccount.Name}' is not an income account.");
+        }
+
+        if (category.Kind != CategoryKind.Income)
+        {
+            throw new InvalidOperationException(
+                $"'{category.Name}' classifies income, and this is an income.");
+        }
+
+        if (amount.Currency != paidFrom.Currency)
+        {
+            throw new InvalidOperationException(
+                $"The income is in {amount.Currency} and '{paidFrom.Name}' works in "
+                    + $"{paidFrom.Currency}. Converting it needs an explicit exchange rate.");
+        }
+
         var entry = new JournalEntry(
             Guid.CreateVersion7(),
             householdId,
-            EntryKind.Expense,
+            EntryKind.Income,
             occurredOn,
             description.Trim(),
             createdAt ?? DateTimeOffset.UtcNow)
         {
             ClientMutationId = clientMutationId,
-            RecurringRule = recurringRule,
+            RecurringRuleId = recurringRuleId,
         };
 
-        entry._postings.Add(Posting.Create(paidFrom.Id, -amount, memberId: memberId));
+        entry._postings.Add(Posting.Create(paidFrom.Id, category.Id, -amount, memberId: memberId));
         entry._postings.Add(
-            Posting.Create(expenseAccount.Id, amount, category.Id, memberId));
+            Posting.Create(incomeAccount.Id, category.Id, amount, memberId));
 
         entry.EnsureBalanced();
 
-        return entry;
+        return new JournalEntry();
     }
 
+    /// <summary>
+    /// Verifies invariant I-1: the postings sum to zero in every currency present.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// If the entry has fewer than two postings or does not balance.
+    /// </exception>
+    /// <remarks>
+    /// Called by every factory method before returning. If it throws, the bug is in the factory
+    /// method, not in the caller.
+    /// </remarks>
     private void EnsureBalanced()
     {
         if (_postings.Count < 2)

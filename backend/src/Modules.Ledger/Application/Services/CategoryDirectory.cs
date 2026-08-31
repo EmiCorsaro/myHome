@@ -33,7 +33,29 @@ internal sealed class CategoryDirectory(LedgerDbContext db, ITenantContext tenan
         ];
     }
 
-    internal static CategorySummary ToSummary(Category category, Guid? parentPublicId) => new(
+    public async Task<IReadOnlyList<CategorySummary>> ListIncomeCategoriesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var householdId = tenant.RequireHouseholdId();
+
+        var categories = await db.Categories
+            .Where(c => c.HouseholdId == householdId
+                && !c.IsArchived
+                && c.Kind == CategoryKind.Income)
+            .OrderBy(c => c.DisplayOrder)
+            .ThenBy(c => c.Name)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. categories.Select(category => ToSummary(category))];
+    }
+
+    /// <summary>
+    /// Maps a category to the published contract.
+    /// </summary>
+    /// <param name="category">Category to map.</param>
+    /// <returns>The summary.</returns>
+    internal static CategorySummary ToSummary(Category category, Guid? parentPublicId = null) => new(
         category.PublicId,
         category.Name,
         category.Kind.ToContractName(),

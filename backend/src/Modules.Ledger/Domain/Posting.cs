@@ -33,6 +33,7 @@ public sealed class Posting
 
     internal static Posting Create(
         int accountId,
+        int id,
         Money amount,
         int? categoryId = null,
         int? memberId = null)

@@ -7,4 +7,6 @@ public interface ICategoryDirectory
 {
     Task<IReadOnlyList<CategorySummary>> ListExpenseCategoriesAsync(
         CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<CategorySummary>> ListIncomeCategoriesAsync(
+        CancellationToken cancellationToken = default);
 }
