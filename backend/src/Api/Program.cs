@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using MyHome.Api.Endpoints;
 using MyHome.Api.ErrorHandling;
+using MyHome.Api.Services;
 using MyHome.Api.Tenancy;
 using MyHome.Modules.Ledger;
 using MyHome.Modules.Ledger.Persistence;
@@ -13,6 +14,7 @@ builder.AddServiceDefaults();
 
 builder.Services.AddSharedModule();
 builder.Services.AddLedgerModule();
+builder.Services.AddApiServices();
 builder.Services.AddOpenApi();
 
 builder.Services.ConfigureHttpJsonOptions(options =>

@@ -1,4 +1,7 @@
-using MyHome.Modules.Ledger.Application;
+using MyHome.Api.Interfaces.Accounts;
+using MyHome.Api.Interfaces.Categories;
+using MyHome.Api.Interfaces.Dashboard;
+using MyHome.Api.Interfaces.Expenses;
 using MyHome.Modules.Ledger.Contracts.Accounts;
 using MyHome.Modules.Ledger.Contracts.Categories;
 using MyHome.Modules.Ledger.Contracts.Dashboard;
@@ -12,7 +15,7 @@ public static class LedgerEndpoints
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        app.MapGet("/api/dashboard", GetDashboardAsync)
+        app.MapGet("/api/dashboard", (IDashboardService dashboard, CancellationToken cancellationToken, DateOnly? month = null) => dashboard.GetDashboardAsync(month, cancellationToken))
             .WithName("GetDashboard")
             .WithTags("Dashboard")
             .WithSummary("Returns the landing screen's figures for one month.")
@@ -20,70 +23,22 @@ public static class LedgerEndpoints
 
         var ledger = app.MapGroup("/api").WithTags("Ledger");
 
-        ledger.MapGet("/accounts", GetAccountsAsync)
+        ledger.MapGet("/accounts", (IAccountService accounts, CancellationToken cancellationToken) => accounts.GetAccountsAsync(cancellationToken))
             .WithName("GetAccounts")
             .WithSummary("Lists the accounts holding real money, with their balances.")
             .Produces<IReadOnlyList<AccountSummary>>();
 
-        ledger.MapGet("/categories/expense", GetExpenseCategoriesAsync)
+        ledger.MapGet("/categories/expense", (ICategoryService categories, CancellationToken cancellationToken) => categories.GetExpenseCategoriesAsync(cancellationToken))
             .WithName("GetExpenseCategories")
             .WithSummary("Lists the expense categories.")
             .Produces<IReadOnlyList<CategorySummary>>();
 
-        ledger.MapPost("/expenses", RegisterExpenseAsync)
+        ledger.MapPost("/expenses", (RegisterExpenseRequest request, IExpenseService expenses, CancellationToken cancellationToken) => expenses.RegisterExpenseAsync(request, cancellationToken))
             .WithName("RegisterExpense")
             .WithSummary("Records an expense.")
             .Produces<RegisteredExpense>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
         return app;
-    }
-
-    private static async Task<IResult> GetDashboardAsync(
-        IDashboardQuery dashboard,
-        CancellationToken cancellationToken,
-        DateOnly? month = null)
-    {
-        var summary = await dashboard
-            .GetMonthlySummaryAsync(month, cancellationToken)
-            .ConfigureAwait(false);
-
-        return Results.Ok(summary);
-    }
-
-    private static async Task<IResult> GetAccountsAsync(
-        IAccountDirectory accounts,
-        CancellationToken cancellationToken)
-    {
-        var result = await accounts
-            .ListRealAccountsAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return Results.Ok(result);
-    }
-
-    private static async Task<IResult> GetExpenseCategoriesAsync(
-        ICategoryDirectory categories,
-        CancellationToken cancellationToken)
-    {
-        var result = await categories
-            .ListExpenseCategoriesAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return Results.Ok(result);
-    }
-
-    private static async Task<IResult> RegisterExpenseAsync(
-        RegisterExpenseRequest request,
-        IExpenseRegistrar registrar,
-        CancellationToken cancellationToken)
-    {
-        var expense = await registrar
-            .RegisterAsync(request, cancellationToken)
-            .ConfigureAwait(false);
-
-        return expense.WasAlreadyRegistered
-            ? Results.Ok(expense)
-            : Results.Created($"/api/expenses/{expense.Id}", expense);
     }
 }

@@ -1,4 +1,4 @@
-using MyHome.Modules.Shared.Application;
+using MyHome.Api.Interfaces.Household;
 using MyHome.Modules.Shared.Contracts.Households;
 
 namespace MyHome.Api.Endpoints;
@@ -11,26 +11,12 @@ public static class HouseholdEndpoints
 
         var group = app.MapGroup("/api/household").WithTags("Household");
 
-        group.MapGet("/", GetCurrentHouseholdAsync)
+        group.MapGet("/", (IHouseholdService households, CancellationToken cancellationToken) => households.GetCurrentHouseholdAsync(cancellationToken))
             .WithName("GetCurrentHousehold")
             .WithSummary("Returns the current request's household together with its members.")
             .Produces<HouseholdSummary>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         return app;
-    }
-
-    private static async Task<IResult> GetCurrentHouseholdAsync(
-        IHouseholdDirectory directory,
-        CancellationToken cancellationToken)
-    {
-        var household = await directory.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
-
-        return household is null
-            ? Results.Problem(
-                title: "Household not found",
-                detail: "The household resolved for this request no longer exists.",
-                statusCode: StatusCodes.Status404NotFound)
-            : Results.Ok(household);
     }
 }
