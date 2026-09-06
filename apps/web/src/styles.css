@@ -10,3 +10,4 @@
    so it has to be pointed at explicitly or its utilities would not be generated. */
 @source "../src";
 @source "../../../packages/ui/src";
+@import "tailwindcss";

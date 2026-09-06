@@ -20,10 +20,13 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "autoprefixer": "^10.5.5",
     "eslint": "10.8.1",
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.9.0",
+    "postcss": "^8.5.28",
     "prettier": "3.9.6",
+    "tailwindcss": "^4.3.3",
     "typescript": "6.0.3",
     "typescript-eslint": "8.67.0"
   },
