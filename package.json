@@ -30,5 +30,8 @@
     "typescript": "6.0.3",
     "typescript-eslint": "8.67.0"
   },
-  "comment:typescript": "TypeScript 7 (the native compiler) is stable, but typescript-eslint 8.67 only supports <6.1.0. Pinned to 6.0.x until the linter catches up; upgrading sooner would force --legacy-peer-deps and give up type-aware linting."
+  "comment:typescript": "TypeScript 7 (the native compiler) is stable, but typescript-eslint 8.67 only supports <6.1.0. Pinned to 6.0.x until the linter catches up; upgrading sooner would force --legacy-peer-deps and give up type-aware linting.",
+  "dependencies": {
+    "@radix-ui/themes": "^3.3.0"
+  }
 }

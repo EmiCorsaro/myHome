@@ -70,17 +70,14 @@ export function DashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 md:p-10 text-slate-800">
       {/* 1. TOP BAR / NAVBAR SUPERIOR */}
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-200 mb-8 gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-indigo-900 font-bold text-2xl">
+      <div className="max-w-7xl mx-auto flex-row md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-200 mb-8 gap-4">
+        <div className="flex flex-row gap-1 justify-between">
+          <div className="flex flex-row items-center gap-2 text-indigo-900 font-bold text-2xl">
             <span className="p-1.5 bg-emerald-600 rounded-lg text-white">
               <Building2 className="h-5 w-5" />
             </span>
             MyHome
           </div>
-          <p className="text-slate-500 text-sm mt-1">
-            Una vista clara para tomar mejores decisiones en casa.
-          </p>
           {/* Estado de guardado */}
           <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-medium border border-emerald-200">
             <CheckCircle2 className="h-3.5 w-3.5" />
