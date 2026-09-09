@@ -33,8 +33,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 /*import { NewExpenseDialog } from "../expenses/NewExpenseDialog";*/
-import { monthKey, shiftMonth } from "../../lib/format";
-/*import { useDashboard, type AccountSummary, type LedgerEntrySummary } from "./useDashboard";*/
+import { formatMonth, formatShortDate, monthKey, shiftMonth } from "../../lib/format";
+import { useDashboard, type AccountSummary, type LedgerEntrySummary } from "./useDashboard";
 
 /**
  * The landing screen: what came in, what went out, where it went, what is left.
@@ -49,10 +49,10 @@ export function DashboardPage() {
   const [month, setMonth] = useState(monthKey);
   /*const [isAddingExpense, setIsAddingExpense] = useState(false);*/
 
-  /*const { data, isPending, error } = useDashboard(month);*/
+  const { data, isPending, error } = useDashboard(month);
   const isCurrentMonth = month === monthKey();
 
-  /*if (isPending) {
+  if (isPending) {
     return <p className="text-sm text-ink-soft">Cargando el panel…</p>;
   }
 
@@ -63,9 +63,9 @@ export function DashboardPage() {
         <p className="mt-1 text-sm text-ink-soft">{error.message}</p>
       </div>
     );
-  }*/
+  }
 
-  /*const hasExpenses = data.byCategory.length > 0;*/
+  const hasExpenses = data.byCategory.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 md:p-10 text-slate-800">
@@ -90,53 +90,48 @@ export function DashboardPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-6 border-b border-slate-200 w-full sm:w-auto">
             <button className="text-emerald-700 font-semibold border-b-2 border-emerald-700 pb-2 text-sm px-1">
-              Resumen
+              <a href="/DashboardPage">Resumen</a>
             </button>
             <button className="text-slate-500 font-medium hover:text-slate-800 pb-2 text-sm px-1">
-              Transacciones
+              <a href="/Transactions">Transacciones</a>
             </button>
             <button className="text-slate-500 font-medium hover:text-slate-800 pb-2 text-sm px-1">
-              Presupuestos
+              <a href="/Budgets">Presupuestos</a>
             </button>
           </div>
 
           {/* Selector de Fecha */}
-          <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Mes anterior"
-                className="h-8 w-8 text-slate-500"
-                onClick={() => setMonth(shiftMonth(month, -1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm font-semibold px-3 text-slate-700">SEPTIEMBRE · 2026</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Mes siguiente"
-                className="h-8 w-8 text-slate-500"
-                onClick={() => setMonth(shiftMonth(month, 1))}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              {isCurrentMonth ? null : (
-                <Button variant="ghost" onClick={() => setMonth(monthKey())}>
-                  Hoy
-                </Button>
-              )}
-            </div>
-
-            {/* Next sub-phase. Disabled rather than hidden so the layout does not shift later.
+          <div
+            className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm"
+            title={capitalise(formatMonth(data.periodStart))}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Mes anterior"
+              className="h-8 w-8 text-slate-500"
+              onClick={() => setMonth(shiftMonth(month, -1))}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span> {capitalise(formatMonth(data.periodStart))} </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Mes siguiente"
+              className="h-8 w-8 text-slate-500"
+              onClick={() => setMonth(shiftMonth(month, 1))}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          {/* Next sub-phase. Disabled rather than hidden so the layout does not shift later.
                 <Button disabled title="Disponible en la próxima etapa">
                   Añadir ingreso
                 </Button>
                 <Button variant="default" onClick={() => setIsAddingExpense(true)}>
                   Añadir gasto
                 </Button>*/}
-          </div>
         </div>
 
         {/* 3. TÍTULO DE LA SECCIÓN */}
@@ -258,8 +253,11 @@ export function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
 
-    /* Columns of the movements table. Outside the component so they are built once.
+{
+  /* Columns of the movements table. Outside the component so they are built once.
 const MOVEMENT_COLUMNS: readonly Column<LedgerEntrySummary>[] = [
   {
     key: "date",
@@ -311,53 +309,49 @@ const MOVEMENT_COLUMNS: readonly Column<LedgerEntrySummary>[] = [
     align: "end",
     render: (entry) => <Money value={entry.amount} />,
   },
-];
+];*/
+}
 
-/**
- * One account with its balance, and a warning when it is under its floor.
- *
- * @param props - The account to show.
- * @param props.account - Account data as published by the API.
- * @returns The card.
+{
+  /*
+   * One account with its balance, and a warning when it is under its floor.
+   *
+   * @param props - The account to show.
+   * @param props.account - Account data as published by the API.
+   * @returns The card.
+   *
+   * @remarks
+   * This card is used to display information about a single account and its current balance.
+   */
+}
 
-function AccountCard({ account }: { account: AccountSummary }) {
-  const isBelowBuffer =
-    account.minimumBufferTarget !== null && account.balance < account.minimumBufferTarget;
-
-  return (
-    <Card className="flex flex-col gap-1">
-      <span className="truncate text-sm font-medium text-ink-soft">{account.name}</span>
-      <Money
-        value={account.balance}
-        currency={account.currency}
-        colorize={false}
-        className="text-xl font-semibold"
-      />
-      {isBelowBuffer ? (
-        // The one colour on this screen that is a warning and not decoration.
-        <span className="text-xs font-medium text-caution">Por debajo del colchón previsto</span>
-      ) : (
-        <span className="text-xs text-ink-faint">
-          {account.isTracked ? "En la proyección" : "Fuera de la proyección"}
-        </span>
-      )}
-    </Card>
-  );
+{
+  /**
+   * The projection card while there is nothing to project from.
+   *
+   * @param props - What is known so far.
+   * @param props.isAvailable - Whether the API can compute a projection yet.
+   * @param props.net - Income minus expense for the month on screen.
+   * @param props.currency - Base currency.
+   * @returns The card's content.
+   *
+   * @remarks
+   * Says what is missing instead of extrapolating one month into a curve. A forecast built from a
+   * handful of manual entries looks like an answer without being one, and this screen is only worth
+   * anything if it can be believed when it says the money will not stretch.
+   */
 }
 
 /**
- * The projection card while there is nothing to project from.
+ * Capitalises the first letter.
  *
- * @param props - What is known so far.
- * @param props.isAvailable - Whether the API can compute a projection yet.
- * @param props.net - Income minus expense for the month on screen.
- * @param props.currency - Base currency.
- * @returns The card's content.
+ * @param value - Text to capitalise.
+ * @returns The text with its first letter in upper case.
  *
  * @remarks
- * Says what is missing instead of extrapolating one month into a curve. A forecast built from a
- * handful of manual entries looks like an answer without being one, and this screen is only worth
- * anything if it can be believed when it says the money will not stretch.
-              */
-  );
+ * `Intl.DateTimeFormat` gives Spanish month names in lower case: right in a sentence, wrong as a
+ * heading.
+ */
+function capitalise(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
