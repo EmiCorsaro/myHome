@@ -16,7 +16,7 @@ public sealed record RegisterExpenseRequest(
     Guid CategoryId,
     decimal Amount,
     DateOnly OccurredOn,
-    string Description,
+    string? Description = null,
     Guid? MemberId = null,
     ExpenseRecurrence Recurrence = ExpenseRecurrence.Once,
     string? ClientMutationId = null);

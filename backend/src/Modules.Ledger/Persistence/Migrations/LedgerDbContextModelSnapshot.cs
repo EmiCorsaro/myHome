@@ -72,6 +72,13 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("name");
 
+                    b.Property<string>("NormalizedName")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("normalized_name")
+                        .HasComputedColumnSql("lower(name)", true);
+
                     b.Property<Guid>("PublicId")
                         .HasColumnType("uuid")
                         .HasColumnName("public_id");
@@ -90,6 +97,11 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
 
                     b.HasIndex("HouseholdId", "DisplayOrder")
                         .HasDatabaseName("ix_accounts_household");
+
+                    b.HasIndex("HouseholdId", "NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("ux_accounts_household_name")
+                        .HasFilter("\"type\" NOT IN ('Income', 'Expense')");
 
                     b.ToTable("accounts", "ledger");
                 });
@@ -135,6 +147,13 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                         .HasColumnType("character varying(80)")
                         .HasColumnName("name");
 
+                    b.Property<string>("NormalizedName")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("normalized_name")
+                        .HasComputedColumnSql("lower(name)", true);
+
                     b.Property<int?>("ParentId")
                         .HasColumnType("integer")
                         .HasColumnName("parent_id");
@@ -150,6 +169,10 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                     b.HasIndex("PublicId")
                         .IsUnique()
                         .HasDatabaseName("ux_categories_public_id");
+
+                    b.HasIndex("HouseholdId", "NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("ux_categories_household_name");
 
                     b.HasIndex("HouseholdId", "Kind", "DisplayOrder")
                         .HasDatabaseName("ix_categories_household_kind");
@@ -345,6 +368,12 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("household_id");
 
+                    b.Property<bool>("IsVoided")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_voided");
+
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -355,6 +384,10 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("occurred_on");
 
+                    b.Property<int?>("OpeningAccountId")
+                        .HasColumnType("integer")
+                        .HasColumnName("opening_account_id");
+
                     b.Property<Guid>("PublicId")
                         .HasColumnType("uuid")
                         .HasColumnName("public_id");
@@ -363,13 +396,27 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("recurring_rule_id");
 
+                    b.Property<int?>("ReversalOfEntryId")
+                        .HasColumnType("integer")
+                        .HasColumnName("reversal_of_entry_id");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("OpeningAccountId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_journal_entries_opening_account")
+                        .HasFilter("opening_account_id IS NOT NULL");
 
                     b.HasIndex("PublicId")
                         .IsUnique()
                         .HasDatabaseName("ux_journal_entries_public_id");
 
                     b.HasIndex("RecurringRuleId");
+
+                    b.HasIndex("ReversalOfEntryId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_journal_entries_reversal_of_entry")
+                        .HasFilter("reversal_of_entry_id IS NOT NULL");
 
                     b.HasIndex("HouseholdId", "ClientMutationId")
                         .IsUnique()
@@ -707,10 +754,20 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
 
             modelBuilder.Entity("MyHome.Modules.Ledger.Domain.JournalEntry", b =>
                 {
+                    b.HasOne("MyHome.Modules.Ledger.Domain.Account", null)
+                        .WithMany()
+                        .HasForeignKey("OpeningAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MyHome.Modules.Ledger.Domain.RecurringRule", "RecurringRule")
                         .WithMany()
                         .HasForeignKey("RecurringRuleId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MyHome.Modules.Ledger.Domain.JournalEntry", null)
+                        .WithMany()
+                        .HasForeignKey("ReversalOfEntryId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("RecurringRule");
                 });

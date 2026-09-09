@@ -29,6 +29,21 @@ public sealed class Posting : Entity
 
     public Money Money => Money.Of(Amount, Currency);
 
+    /// <summary>
+    /// Restates how much this posting moves, keeping everything else about it.
+    /// </summary>
+    /// <param name="amount">The amount the posting should have carried all along.</param>
+    /// <remarks>
+    /// Only an opening balance is corrected this way: it states a position rather than recording
+    /// something that happened, so there is nothing to reverse.
+    /// </remarks>
+    internal void Restate(Money amount)
+    {
+        Amount = amount.Amount;
+        Currency = amount.Currency;
+        AmountBase = amount.Amount;
+    }
+
     internal static Posting Create(
         int accountId,
         Money amount,

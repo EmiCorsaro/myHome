@@ -5,8 +5,6 @@ namespace MyHome.Modules.Ledger.Application;
 
 internal sealed class RegisterExpenseRequestValidator : AbstractValidator<RegisterExpenseRequest>
 {
-    private const int MaxDaysAhead = 366;
-
     public RegisterExpenseRequestValidator()
     {
         RuleFor(r => r.AccountId)
@@ -19,19 +17,20 @@ internal sealed class RegisterExpenseRequestValidator : AbstractValidator<Regist
 
         RuleFor(r => r.Amount)
             .GreaterThan(0m)
-            .WithMessage("The amount must be greater than zero.");
+            .WithMessage("The amount must be greater than zero.")
+            .Must(HasAtMostTwoDecimals)
+            .WithMessage("The amount cannot have more than two decimals.");
 
+        // The description is optional (RF-4): a gap here is not an error, only length is checked.
         RuleFor(r => r.Description)
-            .NotEmpty()
-            .WithMessage("Describe what the expense was.")
             .MaximumLength(200)
             .WithMessage("The description cannot exceed 200 characters.");
 
         RuleFor(r => r.OccurredOn)
             .NotEqual(default(DateOnly))
             .WithMessage("Enter the date of the expense.")
-            .Must(date => date <= DateOnly.FromDateTime(DateTime.UtcNow).AddDays(MaxDaysAhead))
-            .WithMessage("That date is too far in the future. Check the year.");
+            .LessThanOrEqualTo(_ => DateOnly.FromDateTime(DateTime.UtcNow))
+            .WithMessage("A future movement is planned, not recorded.");
 
         RuleFor(r => r.Recurrence)
             .IsInEnum()
@@ -41,4 +40,7 @@ internal sealed class RegisterExpenseRequestValidator : AbstractValidator<Regist
             .MaximumLength(64)
             .When(r => r.ClientMutationId is not null);
     }
+
+    private static bool HasAtMostTwoDecimals(decimal amount) =>
+        decimal.Round(amount, 2, MidpointRounding.ToEven) == amount;
 }

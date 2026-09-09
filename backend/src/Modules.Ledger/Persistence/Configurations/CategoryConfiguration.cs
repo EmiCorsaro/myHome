@@ -6,6 +6,12 @@ namespace MyHome.Modules.Ledger.Persistence.Configurations;
 
 internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
 {
+    /// <summary>Shadow property holding the name in lower case, kept by the database.</summary>
+    internal const string NormalizedNameProperty = "NormalizedName";
+
+    /// <summary>Column behind <see cref="NormalizedNameProperty"/>.</summary>
+    private const string NormalizedNameColumn = "normalized_name";
+
     public void Configure(EntityTypeBuilder<Category> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -43,5 +49,22 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
 
         builder.HasIndex(c => new { c.HouseholdId, c.Kind, c.DisplayOrder })
             .HasDatabaseName("ix_categories_household_kind");
+
+        // A household uses a name once, whatever its case, whatever the kind of the category and
+        // whether or not it is archived. That is exactly the scope CategoryRegistrar checks before
+        // inserting; this index is what makes it true when two members press save at the same
+        // instant and both checks came back clean.
+        //
+        // A stored generated column and not an expression index: EF Core models columns, so this
+        // way the rule lives in the model, travels to the migration on its own and is visible to
+        // any provider instead of hiding in hand-written SQL.
+        builder.Property<string>(NormalizedNameProperty)
+            .HasColumnName(NormalizedNameColumn)
+            .HasMaxLength(80)
+            .HasComputedColumnSql("lower(name)", stored: true);
+
+        builder.HasIndex(nameof(Category.HouseholdId), NormalizedNameProperty)
+            .IsUnique()
+            .HasDatabaseName("ux_categories_household_name");
     }
 }
