@@ -33,8 +33,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 /*import { NewExpenseDialog } from "../expenses/NewExpenseDialog";*/
-import { formatMonth, formatShortDate, monthKey, shiftMonth } from "../../lib/format";
-import { useDashboard, type AccountSummary, type LedgerEntrySummary } from "./useDashboard";
+import { formatMonth, monthKey, shiftMonth } from "../../lib/format";
+import { useDashboard } from "./useDashboard";
 
 /**
  * The landing screen: what came in, what went out, where it went, what is left.
@@ -50,7 +50,6 @@ export function DashboardPage() {
   /*const [isAddingExpense, setIsAddingExpense] = useState(false);*/
 
   const { data, isPending, error } = useDashboard(month);
-  const isCurrentMonth = month === monthKey();
 
   if (isPending) {
     return <p className="text-sm text-ink-soft">Cargando el panel…</p>;
@@ -65,7 +64,7 @@ export function DashboardPage() {
     );
   }
 
-  const hasExpenses = data.byCategory.length > 0;
+  /*const hasExpenses = data.byCategory.length > 0;*/
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 md:p-10 text-slate-800">
