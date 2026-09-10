@@ -31,7 +31,7 @@ import {
   BarChart3,
   DollarSign,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 /*import { NewExpenseDialog } from "../expenses/NewExpenseDialog";*/
 import { formatMonth, monthKey, shiftMonth } from "../../lib/format";
 import { useDashboard } from "./useDashboard";
@@ -47,9 +47,48 @@ import { useDashboard } from "./useDashboard";
  */
 export function DashboardPage() {
   const [month, setMonth] = useState(monthKey);
+  const [balance, setBalance] = useState(0);
+  const [income, setIncome] = useState(0);
+  const [expenses, setExpenses] = useState(0);
   /*const [isAddingExpense, setIsAddingExpense] = useState(false);*/
 
   const { data, isPending, error } = useDashboard(month);
+
+  useEffect(() => {
+    fetch("{{baseUrl}}/api/dashboard")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.accounts && data.accounts.length > 0) {
+          const balanceValue = data.accounts[0].balance;
+          setBalance(balanceValue);
+        }
+      })
+      .catch((error) => console.error("Error al traer datos:", error));
+  }, []);
+
+  useEffect(() => {
+    fetch("{{baseUrl}}/api/incomes")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.accounts && data.accounts.length > 0) {
+          const incomeValue = data.accounts[0].income;
+          setIncome(incomeValue);
+        }
+      })
+      .catch((error) => console.error("Error al traer datos:", error));
+  }, []);
+
+  useEffect(() => {
+    fetch("{{baseUrl}}/api/expenses")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.accounts && data.accounts.length > 0) {
+          const expensesValue = data.accounts[0].expenses;
+          setExpenses(expensesValue);
+        }
+      })
+      .catch((error) => console.error("Error al traer datos:", error));
+  }, []);
 
   if (isPending) {
     return <p className="text-sm text-ink-soft">Cargando el panel…</p>;
@@ -147,10 +186,10 @@ export function DashboardPage() {
           <Card className="shadow-sm border-slate-100 bg-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium text-slate-500">Saldo disponible</CardTitle>
-              <Building2 className="h-4 w-4 text-emerald-600 bg-emerald-50 rounded p-0.5" />
+              <Building2 className="h-7 w-7 text-emerald-600 bg-emerald-50 rounded p-0.5" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-900">307,15 €</div>
+              <div className="text-center text-2xl font-bold text-slate-900">{balance} €</div>
             </CardContent>
           </Card>
 
@@ -158,10 +197,10 @@ export function DashboardPage() {
           <Card className="shadow-sm border-slate-100 bg-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium text-slate-500">Ingresos del mes</CardTitle>
-              <TrendingUp className="h-4 w-4 text-emerald-600" />
+              <TrendingUp className="h-7 w-7 text-emerald-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-emerald-600">2830,00 €</div>
+              <div className="text-center text-2xl font-bold text-emerald-600">{income} €</div>
             </CardContent>
           </Card>
 
@@ -169,10 +208,10 @@ export function DashboardPage() {
           <Card className="shadow-sm border-slate-100 bg-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium text-slate-500">Gastos del mes</CardTitle>
-              <TrendingDown className="h-4 w-4 text-rose-600" />
+              <TrendingDown className="h-7 w-7 text-rose-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-rose-600">2522,85 €</div>
+              <div className="text-center text-2xl font-bold text-rose-600">{expenses} €</div>
             </CardContent>
           </Card>
 
@@ -180,10 +219,10 @@ export function DashboardPage() {
           <Card className="shadow-sm border-slate-100 bg-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium text-slate-500">Ahorro del mes</CardTitle>
-              <PiggyBank className="h-4 w-4 text-indigo-900" />
+              <PiggyBank className="h-7 w-7 text-indigo-900" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-indigo-900">307,15 €</div>
+              <div className="text-center text-2xl font-bold text-indigo-900">0 €</div>
             </CardContent>
           </Card>
         </div>
@@ -202,7 +241,7 @@ export function DashboardPage() {
                     Distribución de los gastos registrados este mes.
                   </CardDescription>
                 </div>
-                <BarChart3 className="h-4 w-4 text-emerald-600" />
+                <BarChart3 className="h-6 w-6 text-emerald-600" />
               </div>
             </CardHeader>
             <CardContent className="space-y-5">
