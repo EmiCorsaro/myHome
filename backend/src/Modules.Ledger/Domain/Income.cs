@@ -22,7 +22,7 @@ public enum IncomePeriodicity
     Semiannual = 6,
 }
 
-public sealed class Income
+public sealed class Income : AuditedTenantEntity
 {
     private Income(
         Guid publicId,
@@ -54,12 +54,6 @@ public sealed class Income
         CreatedAt = createdAt;
     }
 
-    public int Id { get; private set; }
-
-    public Guid PublicId { get; private set; }
-
-    public int HouseholdId { get; private set; }
-
     public string Name { get; private set; }
 
     public IncomeSource Source { get; private set; }
@@ -81,8 +75,6 @@ public sealed class Income
     public DateOnly StartsOn { get; private set; }
 
     public bool IsActive { get; private set; } = true;
-
-    public DateTimeOffset CreatedAt { get; private set; }
 
     public bool IsRecurring => Periodicity != IncomePeriodicity.OneOff;
 

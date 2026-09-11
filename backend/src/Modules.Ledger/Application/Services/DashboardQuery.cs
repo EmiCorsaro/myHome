@@ -49,11 +49,11 @@ internal sealed class DashboardQuery(
             .ConfigureAwait(false);
 
         var income = -movements
-            .Where(m => m.Type == AccountType.Income)
+            .Where(m => m.Kind == CategoryKind.Income)
             .Sum(m => m.Amount);
 
         var expense = movements
-            .Where(m => m.Type == AccountType.Expense)
+            .Where(m => m.Kind == CategoryKind.Expense)
             .Sum(m => m.Amount);
 
         var byCategory = SummariseByCategory(movements, categories, expense);
@@ -91,6 +91,33 @@ internal sealed class DashboardQuery(
             monthMovements);
     }
 
+    /// <summary>
+    /// The classified side of every movement of the period, used to build the month's income,
+    /// expense and spend-by-category report.
+    /// </summary>
+    /// <remarks>
+    /// A movement is "nominal" here because its posting carries a category, not because of what
+    /// type of account it happens to sit on: an income or an expense always puts the category on
+    /// its one nominal-account leg, and story 011's transfer to an uncontrolled account puts it on
+    /// that real account's own leg instead, since there is no nominal account of its own to carry
+    /// it. Both are picked up by the same rule, so a transfer that classifies itself joins this
+    /// report without the query needing to know a transfer even exists (RF-16, story 011). The
+    /// posting's economic nature — income or expense — comes from the category's own kind, which
+    /// always agrees with the nominal account type wherever one exists (RF-17, story 011).
+    /// <para/>
+    /// Each movement also carries whether the real account on the other side of its entry is
+    /// controlled. That is what lets the spend-by-category report leave out the movements of an
+    /// uncontrolled account (RF-10, story 004) without also touching the month's income and
+    /// expense totals, which RF-10 never asked to change. The entry's other leg is found through
+    /// the sibling posting that shares its journal entry — every entry that carries a category
+    /// carries exactly one classified posting and one real, unclassified one.
+    /// <para/>
+    /// A voided entry and its reversal (story 013, RF-4) are left out here too, on top of the
+    /// "carries a category" rule story 011 generalised: a movement that never really counted does
+    /// not get a phantom, zero-total row of its own in the category report. Their contribution to
+    /// the month's income and expense totals is exactly zero anyway — the reversal negates the
+    /// original one for one — so leaving both out here changes nothing those totals ever promised.
+    /// </remarks>
     private async Task<List<NominalMovement>> NominalMovementsAsync(
         int householdId,
         DateOnly start,
@@ -99,13 +126,19 @@ internal sealed class DashboardQuery(
     {
         var query =
             from posting in db.Postings
-            join account in db.Accounts on posting.AccountId equals account.Id
+            where posting.CategoryId != null
+            join category in db.Categories on posting.CategoryId equals (int?)category.Id
             join entry in db.Entries on posting.JournalEntryId equals entry.Id
-            where account.HouseholdId == householdId
-                && (account.Type == AccountType.Income || account.Type == AccountType.Expense)
+            join realPosting in db.Postings on posting.JournalEntryId equals realPosting.JournalEntryId
+            join realAccount in db.Accounts on realPosting.AccountId equals realAccount.Id
+            where entry.HouseholdId == householdId
                 && entry.OccurredOn >= start
                 && entry.OccurredOn <= end
-            select new NominalMovement(account.Type, posting.AmountBase, posting.CategoryId);
+                && realPosting.Id != posting.Id
+                && !entry.IsVoided
+                && entry.ReversalOfEntryId == null
+            select new NominalMovement(
+                category.Kind, posting.AmountBase, posting.CategoryId, realAccount.IsTracked);
 
         return await query.ToListAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -120,7 +153,9 @@ internal sealed class DashboardQuery(
         return
         [
             .. movements
-                .Where(m => m.Type == AccountType.Expense && m.CategoryId is not null)
+                .Where(m => m.Kind == CategoryKind.Expense
+                    && m.CategoryId is not null
+                    && m.IsRealAccountTracked)
                 .GroupBy(m => m.CategoryId!.Value)
                 .Select(group =>
                 {
@@ -197,28 +232,12 @@ internal sealed class DashboardQuery(
         return lines;
     }
 
-    private static DateOnly TodayIn(string timeZoneId)
-    {
-        TimeZoneInfo zone;
-
-        try
-        {
-            zone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-        }
-        catch (TimeZoneNotFoundException)
-        {
-            zone = TimeZoneInfo.Utc;
-        }
-        catch (InvalidTimeZoneException)
-        {
-            zone = TimeZoneInfo.Utc;
-        }
-
-        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, zone).Date);
-    }
+    private static DateOnly TodayIn(string timeZoneId) =>
+        HouseholdClock.TodayIn(timeZoneId, TimeProvider.System);
 
     private static decimal Round(decimal value) =>
         decimal.Round(value, 2, MidpointRounding.ToEven);
 
-    private sealed record NominalMovement(AccountType Type, decimal Amount, int? CategoryId);
+    private sealed record NominalMovement(
+        CategoryKind Kind, decimal Amount, int? CategoryId, bool IsRealAccountTracked);
 }

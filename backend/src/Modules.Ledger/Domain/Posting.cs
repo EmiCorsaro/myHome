@@ -2,7 +2,7 @@ using MyHome.Modules.Shared.Domain;
 
 namespace MyHome.Modules.Ledger.Domain;
 
-public sealed class Posting
+public sealed class Posting : Entity
 {
     private Posting(int accountId, decimal amount, CurrencyCode currency)
     {
@@ -10,8 +10,6 @@ public sealed class Posting
         Amount = amount;
         Currency = currency;
     }
-
-    public int Id { get; private set; }
 
     public int JournalEntryId { get; private set; }
 
@@ -30,6 +28,21 @@ public sealed class Posting
     public decimal AmountBase { get; private set; }
 
     public Money Money => Money.Of(Amount, Currency);
+
+    /// <summary>
+    /// Restates how much this posting moves, keeping everything else about it.
+    /// </summary>
+    /// <param name="amount">The amount the posting should have carried all along.</param>
+    /// <remarks>
+    /// Only an opening balance is corrected this way: it states a position rather than recording
+    /// something that happened, so there is nothing to reverse.
+    /// </remarks>
+    internal void Restate(Money amount)
+    {
+        Amount = amount.Amount;
+        Currency = amount.Currency;
+        AmountBase = amount.Amount;
+    }
 
     internal static Posting Create(
         int accountId,

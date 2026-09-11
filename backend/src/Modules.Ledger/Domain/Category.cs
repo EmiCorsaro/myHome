@@ -1,3 +1,5 @@
+using MyHome.Modules.Shared.Domain;
+
 namespace MyHome.Modules.Ledger.Domain;
 
 public enum CategoryKind
@@ -6,7 +8,7 @@ public enum CategoryKind
     Expense = 2,
 }
 
-public sealed class Category
+public sealed class Category : AuditedTenantEntity
 {
     private Category(
         Guid publicId,
@@ -14,7 +16,8 @@ public sealed class Category
         string name,
         CategoryKind kind,
         int colorIndex,
-        int displayOrder)
+        int displayOrder,
+        DateTimeOffset createdAt)
     {
         PublicId = publicId;
         HouseholdId = householdId;
@@ -22,15 +25,10 @@ public sealed class Category
         Kind = kind;
         ColorIndex = colorIndex;
         DisplayOrder = displayOrder;
+        CreatedAt = createdAt;
     }
 
     public const int PaletteSize = 10;
-
-    public int Id { get; private set; }
-
-    public Guid PublicId { get; private set; }
-
-    public int HouseholdId { get; private set; }
 
     public string Name { get; private set; }
 
@@ -50,7 +48,8 @@ public sealed class Category
         CategoryKind kind,
         int colorIndex,
         int displayOrder = 0,
-        int? parentId = null)
+        int? parentId = null,
+        DateTimeOffset? createdAt = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
@@ -62,7 +61,8 @@ public sealed class Category
             name.Trim(),
             kind,
             wrapped,
-            displayOrder)
+            displayOrder,
+            createdAt ?? DateTimeOffset.UtcNow)
         {
             ParentId = parentId,
         };

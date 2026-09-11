@@ -1,5 +1,7 @@
 context/
 docs/
+specs/
+progress/
 *.private.md
 *.local.md
 

@@ -58,6 +58,20 @@ internal sealed class JournalEntryConfiguration : IEntityTypeConfiguration<Journ
             .HasField("_postings")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
+        builder.Property(e => e.OpeningAccountId).HasColumnName("opening_account_id");
+
+        builder.HasOne<Account>()
+            .WithMany()
+            .HasForeignKey(e => e.OpeningAccountId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // One opening balance per account (RF-7), held by the database rather than by a check the
+        // service makes: two members declaring it at the same time would both pass that check.
+        builder.HasIndex(e => e.OpeningAccountId)
+            .IsUnique()
+            .HasFilter("opening_account_id IS NOT NULL")
+            .HasDatabaseName("ux_journal_entries_opening_account");
+
         builder.HasIndex(e => new { e.HouseholdId, e.OccurredOn })
             .HasDatabaseName("ix_journal_entries_household_date");
 
@@ -65,5 +79,25 @@ internal sealed class JournalEntryConfiguration : IEntityTypeConfiguration<Journ
             .IsUnique()
             .HasFilter("client_mutation_id IS NOT NULL")
             .HasDatabaseName("ux_journal_entries_client_mutation");
+
+        builder.Property(e => e.IsVoided)
+            .HasColumnName("is_voided")
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(e => e.ReversalOfEntryId).HasColumnName("reversal_of_entry_id");
+
+        builder.HasOne<JournalEntry>()
+            .WithMany()
+            .HasForeignKey(e => e.ReversalOfEntryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // One reversal per entry (RF-7, story 013), held by the database rather than by a check the
+        // service makes: two members voiding the same movement at the same time would both pass
+        // that check.
+        builder.HasIndex(e => e.ReversalOfEntryId)
+            .IsUnique()
+            .HasFilter("reversal_of_entry_id IS NOT NULL")
+            .HasDatabaseName("ux_journal_entries_reversal_of_entry");
     }
 }

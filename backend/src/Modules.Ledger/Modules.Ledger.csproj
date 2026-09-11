@@ -27,4 +27,12 @@
     <PackageReference Include="FluentValidation" />
   </ItemGroup>
 
+  <!--
+    The application services are internal on purpose (see above). Their tests need to reach them,
+    and only their tests: this is the single exception, not a crack in the boundary.
+  -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="MyHome.Ledger.Tests" />
+  </ItemGroup>
+
 </Project>

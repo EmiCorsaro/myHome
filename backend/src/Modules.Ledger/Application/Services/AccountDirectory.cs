@@ -52,5 +52,6 @@ internal sealed class AccountDirectory(LedgerDbContext db, ITenantContext tenant
         account.Currency.Value,
         decimal.Round(balance, 2, MidpointRounding.ToEven),
         account.IsTracked,
-        account.MinimumBufferTarget);
+        account.MinimumBufferTarget,
+        account.IsArchived);
 }
