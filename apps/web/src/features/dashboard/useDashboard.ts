@@ -81,6 +81,28 @@ export interface DashboardSummary {
   recentEntries: LedgerEntrySummary[];
 }
 
+/** The expense as the API recorded it. */
+export interface RegisteredExpense {
+  /** Identifier of the created entry. */
+  id: string;
+  /** Date it happened. */
+  occurredOn: string;
+  /** What it was. */
+  description: string;
+  /** Amount spent, positive. */
+  amount: number;
+  /** Three-letter ISO 4217 code. */
+  currency: string;
+  /** Account the money left. */
+  accountName: string;
+  /** Category it was classified as. */
+  categoryName: string;
+  /** That category's tone. */
+  categoryColorIndex: number;
+  /** `true` when this request repeated one already saved and nothing new was created. */
+  wasAlreadyRegistered: boolean;
+}
+
 /**
  * Root of the dashboard query keys. Each month caches under its own key below this one, so
  * invalidating the root refreshes every month the user has visited.
@@ -107,5 +129,12 @@ export function useDashboard(month?: string) {
     // Keeps the previous month on screen while the next loads, so stepping through months does
     // not flash an empty layout on every click.
     placeholderData: (previous) => previous,
+  });
+}
+
+export function useGetExpenses() {
+  return useQuery({
+    queryKey: ["expenses"],
+    queryFn: () => apiGet<RegisteredExpense>("/api/expenses"),
   });
 }
