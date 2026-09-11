@@ -53,9 +53,17 @@ public static class LedgerSeeder
             ("Nómina", IncomeSource.Salary, "Nómina", 2530m, 25),
         ];
 
-    private static readonly (string Category, decimal Amount)[] StarterBudgets =
+    private static readonly (string Category, decimal Amount, PlannedAmountMode Mode)[]
+        StarterBudgets =
         [
-            ("Supermercado", 300m),
+            ("Supermercado", 300m, PlannedAmountMode.Estimated),
+        ];
+
+    private static readonly (string Category, decimal Amount, PlannedAmountMode Mode,
+        BudgetIncomeOrigin Origin)[] StarterIncomeBudgets =
+        [
+            ("Nómina", 2530m, PlannedAmountMode.Fixed, BudgetIncomeOrigin.Payroll),
+            ("Facturación", 800m, PlannedAmountMode.Estimated, BudgetIncomeOrigin.SelfEmployment),
         ];
 
     public static async Task EnsureSeededAsync(
@@ -197,13 +205,33 @@ public static class LedgerSeeder
                 thisMonth.AddDays(day - 1)));
         }
 
-        foreach (var (categoryName, amount) in StarterBudgets)
+        // Seeded budget lines carry an account and a mode now that a line declares both. The
+        // starter household keeps one account, so there is nothing to choose between.
+        foreach (var (categoryName, amount, mode) in StarterBudgets)
         {
-            db.CategoryBudgets.Add(CategoryBudget.Create(
+            db.BudgetLines.Add(BudgetLine.Declare(
                 householdId,
+                BudgetLineSign.Expense,
                 categories[categoryName],
+                account,
                 thisMonth,
-                Money.Of(amount, CurrencyCode.Euro)));
+                amount,
+                mode));
+        }
+
+        // An income line is the same shape as an expense one plus its origin, which is what lets
+        // the month publish what it expects to receive next to what it commits to spend.
+        foreach (var (categoryName, amount, mode, origin) in StarterIncomeBudgets)
+        {
+            db.BudgetLines.Add(BudgetLine.Declare(
+                householdId,
+                BudgetLineSign.Income,
+                categories[categoryName],
+                account,
+                thisMonth,
+                amount,
+                mode,
+                origin));
         }
     }
 }

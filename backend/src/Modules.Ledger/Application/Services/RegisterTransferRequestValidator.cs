@@ -5,7 +5,7 @@ namespace MyHome.Modules.Ledger.Application;
 
 internal sealed class RegisterTransferRequestValidator : AbstractValidator<RegisterTransferRequest>
 {
-    public RegisterTransferRequestValidator()
+    public RegisterTransferRequestValidator(TimeProvider clock)
     {
         RuleFor(r => r.FromAccountId)
             .NotEmpty()
@@ -29,7 +29,7 @@ internal sealed class RegisterTransferRequestValidator : AbstractValidator<Regis
         RuleFor(r => r.OccurredOn)
             .NotEqual(default(DateOnly))
             .WithMessage("Enter the date of the transfer.")
-            .LessThanOrEqualTo(_ => DateOnly.FromDateTime(DateTime.UtcNow))
+            .LessThanOrEqualTo(_ => DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime))
             .WithMessage("A future movement is planned, not recorded.");
 
         RuleFor(r => r.ClientMutationId)

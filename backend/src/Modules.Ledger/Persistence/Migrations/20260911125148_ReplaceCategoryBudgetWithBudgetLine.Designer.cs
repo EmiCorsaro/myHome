@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyHome.Modules.Ledger.Persistence;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyHome.Modules.Ledger.Persistence.Migrations
 {
     [DbContext(typeof(LedgerDbContext))]
-    partial class LedgerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260911125148_ReplaceCategoryBudgetWithBudgetLine")]
+    partial class ReplaceCategoryBudgetWithBudgetLine
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -148,11 +151,6 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("household_id");
 
-                    b.Property<string>("Origin")
-                        .HasMaxLength(24)
-                        .HasColumnType("character varying(24)")
-                        .HasColumnName("origin");
-
                     b.Property<DateOnly>("PeriodStart")
                         .HasColumnType("date")
                         .HasColumnName("period_start");
@@ -187,8 +185,6 @@ namespace MyHome.Modules.Ledger.Persistence.Migrations
                     b.ToTable("budget_lines", "ledger", t =>
                         {
                             t.HasCheckConstraint("ck_budget_lines_amount_is_positive", "amount > 0");
-
-                            t.HasCheckConstraint("ck_budget_lines_origin_matches_sign", "(sign = 'Income' AND origin IS NOT NULL) OR (sign = 'Expense' AND origin IS NULL)");
 
                             t.HasCheckConstraint("ck_budget_lines_period_start_is_first", "date_part('day', period_start) = 1");
                         });

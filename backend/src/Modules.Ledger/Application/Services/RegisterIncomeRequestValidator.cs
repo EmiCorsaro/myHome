@@ -5,7 +5,7 @@ namespace MyHome.Modules.Ledger.Application;
 
 internal sealed class RegisterIncomeRequestValidator : AbstractValidator<RegisterIncomeRequest>
 {
-    public RegisterIncomeRequestValidator()
+    public RegisterIncomeRequestValidator(TimeProvider clock)
     {
         RuleFor(r => r.AccountId)
             .NotEmpty()
@@ -29,7 +29,7 @@ internal sealed class RegisterIncomeRequestValidator : AbstractValidator<Registe
         RuleFor(r => r.OccurredOn)
             .NotEqual(default(DateOnly))
             .WithMessage("Enter the date of the income.")
-            .LessThanOrEqualTo(_ => DateOnly.FromDateTime(DateTime.UtcNow))
+            .LessThanOrEqualTo(_ => DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime))
             .WithMessage("A future movement is planned, not recorded.");
 
         RuleFor(r => r.ClientMutationId)

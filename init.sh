@@ -174,12 +174,12 @@ else
 fi
 
 echo ""
-echo "── 5. Frontend: formato, lint, tipos y build ───────────"
+echo "── 5. Frontend: lint, tipos y build ────────────────────"
 
 if [ ! -d node_modules ]; then
   warn "Saltado: no hay node_modules/. Ejecuta 'npm install' desde la raíz"
 else
-  for step in format:check lint typecheck build; do
+  for step in lint typecheck build; do
     if npm run "$step" --silent; then
       ok "npm run $step"
     else

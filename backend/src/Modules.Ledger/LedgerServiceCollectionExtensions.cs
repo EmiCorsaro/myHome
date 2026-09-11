@@ -1,6 +1,7 @@
 using FluentValidation;
 using MyHome.Modules.Ledger.Application;
 using MyHome.Modules.Ledger.Contracts.Accounts;
+using MyHome.Modules.Ledger.Contracts.Budget;
 using MyHome.Modules.Ledger.Contracts.Categories;
 using MyHome.Modules.Ledger.Contracts.Expenses;
 using MyHome.Modules.Ledger.Contracts.Incomes;
@@ -44,6 +45,8 @@ public static class LedgerServiceCollectionExtensions
         services.AddScoped<ITransferRegistrar, TransferRegistrar>();
         services.AddScoped<IMovementLifecycleRegistrar, MovementLifecycleRegistrar>();
         services.AddScoped<IDashboardQuery, DashboardQuery>();
+        services.AddScoped<IBudgetDirectory, BudgetDirectory>();
+        services.AddScoped<IBudgetLineRegistrar, BudgetLineRegistrar>();
 
         // "Not in the future" is decided against the household's clock, and a test needs to be able
         // to stand on a known day. TryAdd so a host that already registered its own keeps it.
@@ -56,6 +59,7 @@ public static class LedgerServiceCollectionExtensions
         services.AddScoped<IValidator<RegisterIncomeRequest>, RegisterIncomeRequestValidator>();
         services.AddScoped<IValidator<RegisterTransferRequest>, RegisterTransferRequestValidator>();
         services.AddScoped<IValidator<CreateCategoryRequest>, CreateCategoryRequestValidator>();
+        services.AddScoped<IValidator<DeclareBudgetLineRequest>, DeclareBudgetLineRequestValidator>();
 
         return services;
     }

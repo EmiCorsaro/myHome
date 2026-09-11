@@ -1,4 +1,4 @@
-using MyHome.Modules.Ledger.Application;
+﻿using MyHome.Modules.Ledger.Application;
 using MyHome.Modules.Ledger.Contracts.Expenses;
 using MyHome.Modules.Ledger.Contracts.Transfers;
 using MyHome.Modules.Ledger.Domain;
@@ -16,6 +16,10 @@ namespace MyHome.Ledger.Tests;
 public sealed class DashboardQueryTests : IDisposable
 {
     private static readonly DateOnly Today = new(2026, 9, 9);
+
+    /// <summary>A clock parked on <see cref="Today"/>, so that "tomorrow" stays in the future.</summary>
+    private static readonly TimeProvider Clock =
+        new FixedTimeProvider(new DateTimeOffset(Today, new TimeOnly(10, 0), TimeSpan.Zero));
 
     private readonly LedgerDatabase _database = new();
 
@@ -118,7 +122,7 @@ public sealed class DashboardQueryTests : IDisposable
         new(
             _database.Context,
             new TestTenantContext(HouseholdId),
-            new RegisterExpenseRequestValidator(),
+            new RegisterExpenseRequestValidator(Clock),
             new TestHouseholdDirectory(CurrencyCode.Euro));
 
     private MovementLifecycleRegistrar MovementLifecycleRegistrarFor() =>
@@ -128,7 +132,7 @@ public sealed class DashboardQueryTests : IDisposable
         new(
             _database.Context,
             new TestTenantContext(HouseholdId),
-            new RegisterTransferRequestValidator());
+            new RegisterTransferRequestValidator(Clock));
 
     private DashboardQuery DashboardQueryFor() =>
         new(

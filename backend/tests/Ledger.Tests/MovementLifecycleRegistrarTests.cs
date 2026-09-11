@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using MyHome.Modules.Ledger.Application;
 using MyHome.Modules.Ledger.Contracts.Expenses;
 using MyHome.Modules.Ledger.Contracts.Incomes;
@@ -22,6 +22,10 @@ namespace MyHome.Ledger.Tests;
 public sealed class MovementLifecycleRegistrarTests : IDisposable
 {
     private static readonly DateOnly Today = new(2026, 9, 9);
+
+    /// <summary>A clock parked on <see cref="Today"/>, so that "tomorrow" stays in the future.</summary>
+    private static readonly TimeProvider Clock =
+        new FixedTimeProvider(new DateTimeOffset(Today, new TimeOnly(10, 0), TimeSpan.Zero));
 
     private readonly LedgerDatabase _database = new();
 
@@ -302,21 +306,21 @@ public sealed class MovementLifecycleRegistrarTests : IDisposable
         new(
             _database.Context,
             new TestTenantContext(HouseholdId),
-            new RegisterExpenseRequestValidator(),
+            new RegisterExpenseRequestValidator(Clock),
             new TestHouseholdDirectory(CurrencyCode.Euro));
 
     private IncomeRegistrar IncomeRegistrarFor() =>
         new(
             _database.Context,
             new TestTenantContext(HouseholdId),
-            new RegisterIncomeRequestValidator(),
+            new RegisterIncomeRequestValidator(Clock),
             new TestHouseholdDirectory(CurrencyCode.Euro));
 
     private TransferRegistrar TransferRegistrarFor() =>
         new(
             _database.Context,
             new TestTenantContext(HouseholdId),
-            new RegisterTransferRequestValidator());
+            new RegisterTransferRequestValidator(Clock));
 
     private MovementLifecycleRegistrar MovementLifecycleRegistrarFor() =>
         new(_database.Context, new TestTenantContext(HouseholdId), TimeProvider.System);

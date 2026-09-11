@@ -1,5 +1,6 @@
 using MyHome.Modules.Ledger.Application;
 using MyHome.Modules.Ledger.Contracts.Accounts;
+using MyHome.Modules.Ledger.Contracts.Budget;
 using MyHome.Modules.Ledger.Contracts.Categories;
 using MyHome.Modules.Ledger.Contracts.Dashboard;
 using MyHome.Modules.Ledger.Contracts.Expenses;
@@ -97,6 +98,19 @@ public static class LedgerEndpoints
             .WithName("CreateCategory")
             .WithSummary("Creates a category.")
             .Produces<CategorySummary>(StatusCodes.Status201Created)
+            .ProducesValidationProblem();
+
+        // The budget of a month is read whole — its lines and the total they commit — because the
+        // total is the figure the household decides with and it is not the screen's job to add up.
+        ledger.MapGet("/budget", GetMonthBudgetAsync)
+            .WithName("GetMonthBudget")
+            .WithSummary("Lists the budget lines of one month with what they commit and expect.")
+            .Produces<MonthBudget>();
+
+        ledger.MapPost("/budget/lines", DeclareBudgetLineAsync)
+            .WithName("DeclareBudgetLine")
+            .WithSummary("Declares what the household expects to spend or receive in a category that month.")
+            .Produces<BudgetLineSummary>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
         ledger.MapPost("/expenses", RegisterExpenseAsync)
@@ -286,6 +300,26 @@ public static class LedgerEndpoints
             .ConfigureAwait(false);
 
         return Results.Created($"/api/categories/{category.Id}", category);
+    }
+
+    private static async Task<IResult> GetMonthBudgetAsync(
+        IBudgetDirectory budget,
+        CancellationToken cancellationToken,
+        DateOnly? month = null)
+    {
+        var result = await budget.GetMonthAsync(month, cancellationToken).ConfigureAwait(false);
+
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> DeclareBudgetLineAsync(
+        DeclareBudgetLineRequest request,
+        IBudgetLineRegistrar registrar,
+        CancellationToken cancellationToken)
+    {
+        var line = await registrar.DeclareAsync(request, cancellationToken).ConfigureAwait(false);
+
+        return Results.Created($"/api/budget/lines/{line.Id}", line);
     }
 
     private static async Task<IResult> RegisterExpenseAsync(

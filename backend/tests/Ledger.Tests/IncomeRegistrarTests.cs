@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using MyHome.Modules.Ledger.Application;
 using MyHome.Modules.Ledger.Contracts.Incomes;
 using MyHome.Modules.Ledger.Domain;
@@ -18,6 +18,10 @@ namespace MyHome.Ledger.Tests;
 public sealed class IncomeRegistrarTests : IDisposable
 {
     private static readonly DateOnly Today = new(2026, 9, 9);
+
+    /// <summary>A clock parked on <see cref="Today"/>, so that "tomorrow" stays in the future.</summary>
+    private static readonly TimeProvider Clock =
+        new FixedTimeProvider(new DateTimeOffset(Today, new TimeOnly(10, 0), TimeSpan.Zero));
 
     private readonly LedgerDatabase _database = new();
 
@@ -466,7 +470,7 @@ public sealed class IncomeRegistrarTests : IDisposable
         new(
             _database.Context,
             new TestTenantContext(HouseholdId, memberId),
-            new RegisterIncomeRequestValidator(),
+            new RegisterIncomeRequestValidator(Clock),
             new TestHouseholdDirectory(CurrencyCode.Euro, resolvableMembers));
 
     private async Task<Account> Existing(

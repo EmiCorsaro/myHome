@@ -24,7 +24,7 @@ internal sealed class LedgerDbContext(DbContextOptions<LedgerDbContext> options)
 
     public DbSet<PlannedMovement> PlannedMovements => Set<PlannedMovement>();
 
-    public DbSet<CategoryBudget> CategoryBudgets => Set<CategoryBudget>();
+    public DbSet<BudgetLine> BudgetLines => Set<BudgetLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

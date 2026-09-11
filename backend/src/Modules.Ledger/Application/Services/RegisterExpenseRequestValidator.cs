@@ -5,7 +5,7 @@ namespace MyHome.Modules.Ledger.Application;
 
 internal sealed class RegisterExpenseRequestValidator : AbstractValidator<RegisterExpenseRequest>
 {
-    public RegisterExpenseRequestValidator()
+    public RegisterExpenseRequestValidator(TimeProvider clock)
     {
         RuleFor(r => r.AccountId)
             .NotEmpty()
@@ -29,7 +29,7 @@ internal sealed class RegisterExpenseRequestValidator : AbstractValidator<Regist
         RuleFor(r => r.OccurredOn)
             .NotEqual(default(DateOnly))
             .WithMessage("Enter the date of the expense.")
-            .LessThanOrEqualTo(_ => DateOnly.FromDateTime(DateTime.UtcNow))
+            .LessThanOrEqualTo(_ => DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime))
             .WithMessage("A future movement is planned, not recorded.");
 
         RuleFor(r => r.Recurrence)

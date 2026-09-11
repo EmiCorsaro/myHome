@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using MyHome.Modules.Ledger.Application;
 using MyHome.Modules.Ledger.Contracts.Expenses;
 using MyHome.Modules.Ledger.Domain;
@@ -18,6 +18,10 @@ namespace MyHome.Ledger.Tests;
 public sealed class ExpenseRegistrarTests : IDisposable
 {
     private static readonly DateOnly Today = new(2026, 9, 9);
+
+    /// <summary>A clock parked on <see cref="Today"/>, so that "tomorrow" stays in the future.</summary>
+    private static readonly TimeProvider Clock =
+        new FixedTimeProvider(new DateTimeOffset(Today, new TimeOnly(10, 0), TimeSpan.Zero));
 
     private readonly LedgerDatabase _database = new();
 
@@ -400,11 +404,26 @@ public sealed class ExpenseRegistrarTests : IDisposable
         Assert.NotNull(byAnonymous);
     }
 
+    // Story 051, RF-17: spending in a category with no budget line declares nothing on the
+    // household's behalf. A budget is desirable, not compulsory, and a line invented here would
+    // be a declaration the household never made.
+    [Fact(DisplayName = "Spending in a category with no budget line creates no budget line")]
+    public async Task spending_in_a_category_with_no_budget_line_creates_no_budget_line()
+    {
+        var account = await Existing("Santander conjunta");
+        var category = await NewExpenseCategory();
+
+        await ExpenseRegistrarFor().RegisterAsync(
+            new RegisterExpenseRequest(account.PublicId, category.PublicId, 42.35m, Today));
+
+        Assert.Empty(await _database.Context.BudgetLines.ToListAsync());
+    }
+
     private ExpenseRegistrar ExpenseRegistrarFor(int? memberId = null) =>
         new(
             _database.Context,
             new TestTenantContext(HouseholdId, memberId),
-            new RegisterExpenseRequestValidator(),
+            new RegisterExpenseRequestValidator(Clock),
             new TestHouseholdDirectory(CurrencyCode.Euro));
 
     private async Task<Account> Existing(
