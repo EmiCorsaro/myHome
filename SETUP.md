@@ -175,6 +175,60 @@ npm run dev --workspace @myhome/web
 This reads `apps/web/.env.development` to find the API. If the API is not running, screens that
 fetch data will show their error state — which is a good reason to design that state properly.
 
+## Running the API without the frontend
+
+For hitting endpoints directly — Postman, curl, the `myHome API` collection — without paying
+for Vite's dev server on every change.
+
+`backend/src/Api` migrates and seeds itself on startup exactly like AppHost does (see
+`Program.cs`): the only thing it does not do on its own is start Postgres. Point it at a
+database and run it directly:
+
+```bash
+docker run -d --name myhome-api-standalone-db -p 5432:5432 \
+  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=myhomedb \
+  -v myhome-standalone-pgdata:/var/lib/postgresql/data \
+  postgres:17
+```
+
+A separate container and volume on purpose, so this never collides with the one AppHost
+manages — **don't run both at once**, they both want host port 5432.
+
+```bash
+export ConnectionStrings__myhomedb="Host=localhost;Port=5432;Database=myhomedb;Username=postgres;Password=postgres"
+dotnet run --project backend/src/Api
+```
+
+PowerShell:
+
+```powershell
+$env:ConnectionStrings__myhomedb = "Host=localhost;Port=5432;Database=myhomedb;Username=postgres;Password=postgres"
+dotnet run --project backend/src/Api
+```
+
+The double underscore is .NET's standard mapping from an environment variable to a nested
+configuration key (`ConnectionStrings:myhomedb`) — no user secret needed, and none of
+`backend/src/Api`'s own files change. `dotnet run` still reads
+`Api/Properties/launchSettings.json` on its own, so the environment is `Development` and the
+API listens on `http://localhost:5216`, same as under AppHost.
+
+What you lose versus the full `AppHost` run: the Aspire dashboard (console logs only) and
+pgweb (use `psql` or any Postgres client against `localhost:5432` instead). What stays
+identical: migrations, seeding, and the API's behavior — so the `myHome API` Postman
+collection works against it unchanged.
+
+When you are done:
+
+```bash
+docker rm -f myhome-api-standalone-db
+docker volume rm myhome-standalone-pgdata
+```
+
+If a separate Postgres feels like too much ceremony and a Vite process running quietly in the
+background is not actually a problem, the zero-setup alternative is to just run
+`dotnet run --project backend/src/AppHost` as always and never open the browser tab it
+launches — call the API on `http://localhost:5216` directly and ignore the web app.
+
 ## Working against a shared database
 
 By default `AppHost.cs` starts PostgreSQL in a local container, isolated per machine. To work

@@ -1,6 +1,6 @@
 namespace MyHome.Modules.Shared.Domain;
 
-public sealed class HouseholdMember
+public sealed class HouseholdMember : TenantEntity
 {
     private HouseholdMember(
         Guid publicId,
@@ -17,12 +17,6 @@ public sealed class HouseholdMember
         JoinedAt = joinedAt;
         UserId = userId;
     }
-
-    public int Id { get; private set; }
-
-    public Guid PublicId { get; private set; }
-
-    public int HouseholdId { get; private set; }
 
     public Guid? UserId { get; private set; }
 

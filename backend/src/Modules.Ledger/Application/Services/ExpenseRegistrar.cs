@@ -60,6 +60,18 @@ internal sealed class ExpenseRegistrar(
             .ConfigureAwait(false)
             ?? throw Invalid("categoryId", "That category is not available.");
 
+        if (category.Kind != CategoryKind.Expense)
+        {
+            throw Invalid("categoryId", "That category classifies income, not an expense.");
+        }
+
+        if (await OpeningBalances
+                .IsBeforeOpeningBalanceAsync(db, account.Id, request.OccurredOn, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            throw Invalid("occurredOn", ExpenseBeforeOpeningBalanceMessage);
+        }
+
         int? memberId = null;
 
         if (request.MemberId is { } memberPublicId)
@@ -80,13 +92,20 @@ internal sealed class ExpenseRegistrar(
 
         if (request.Recurrence != ExpenseRecurrence.Once)
         {
+            // RecurringRule still requires a non-blank description (out of this story's scope,
+            // untouched); an expense with no description supplied (RF-4) still needs one to
+            // repeat by.
+            var recurringDescription = string.IsNullOrWhiteSpace(request.Description)
+                ? "Recurring expense"
+                : request.Description;
+
             rule = RecurringRule.Create(
                 householdId,
                 EntryKind.Expense,
                 ToFrequency(request.Recurrence),
                 account,
                 category,
-                request.Description,
+                recurringDescription,
                 Money.Of(request.Amount, account.Currency),
                 request.OccurredOn);
 
@@ -195,6 +214,10 @@ internal sealed class ExpenseRegistrar(
 
         db.Accounts.Add(created);
 
+        // The postings built right after this call reference the account by its numeric id, not
+        // through a tracked navigation, so the id must already exist before they are built.
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
         return created;
     }
 
@@ -247,6 +270,20 @@ internal sealed class ExpenseRegistrar(
             frequency,
             "The rule has a frequency the contract does not publish."),
     };
+
+    /// <summary>
+    /// Shown when an expense is dated earlier than the opening balance already declared for its
+    /// account (RF-12).
+    /// </summary>
+    /// <remarks>
+    /// This story does not reuse <see cref="OpeningBalances.MovementBeforeOpeningMessage"/>: that
+    /// text describes the mirror case (editing the opening balance forward strands a movement
+    /// already recorded), not this one, where the new expense itself is the one arriving too
+    /// early. Sharing the constant across both callers would have made one of the two readings
+    /// wrong.
+    /// </remarks>
+    private const string ExpenseBeforeOpeningBalanceMessage =
+        "An expense cannot be dated before the account's opening balance.";
 
     private static ValidationFailedException Invalid(string field, string message) =>
         new(new Dictionary<string, string[]> { [field] = [message] });
