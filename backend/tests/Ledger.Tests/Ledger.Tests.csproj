@@ -15,6 +15,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules.Ledger\Modules.Ledger.csproj" />
+    <ProjectReference Include="..\..\src\Api\Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules.Shared\Modules.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

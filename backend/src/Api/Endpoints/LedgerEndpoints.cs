@@ -7,6 +7,7 @@ using MyHome.Modules.Ledger.Contracts.Expenses;
 using MyHome.Modules.Ledger.Contracts.Incomes;
 using MyHome.Modules.Ledger.Contracts.Movements;
 using MyHome.Modules.Ledger.Contracts.Transfers;
+using MyHome.Modules.Shared.Contracts;
 
 namespace MyHome.Api.Endpoints;
 
@@ -123,6 +124,18 @@ public static class LedgerEndpoints
             .WithName("RegisterIncome")
             .WithSummary("Records an income.")
             .Produces<RegisteredIncome>(StatusCodes.Status201Created)
+            .ProducesValidationProblem();
+
+        ledger.MapGet("/incomes", GetIncomesAsync)
+            .WithName("GetIncomes")
+            .WithSummary("Lists the household's real income movements.")
+            .Produces<IReadOnlyList<LedgerEntrySummary>>()
+            .ProducesValidationProblem();
+
+        ledger.MapGet("/expenses", GetExpensesAsync)
+            .WithName("GetExpenses")
+            .WithSummary("Lists the household's real expense movements.")
+            .Produces<IReadOnlyList<LedgerEntrySummary>>()
             .ProducesValidationProblem();
 
         ledger.MapPost("/transfers", RegisterTransferAsync)
@@ -362,6 +375,43 @@ public static class LedgerEndpoints
         return transfer.WasAlreadyRegistered
             ? Results.Ok(transfer)
             : Results.Created($"/api/transfers/{transfer.Id}", transfer);
+    }
+
+    private static Task<IResult> GetIncomesAsync(
+        IDashboardQuery dashboard,
+        CancellationToken cancellationToken,
+        DateOnly? from = null,
+        DateOnly? to = null) =>
+        ListRealMovementsAsync(dashboard, CategoryNature.Income, from, to, cancellationToken);
+
+    private static Task<IResult> GetExpensesAsync(
+        IDashboardQuery dashboard,
+        CancellationToken cancellationToken,
+        DateOnly? from = null,
+        DateOnly? to = null) =>
+        ListRealMovementsAsync(dashboard, CategoryNature.Expense, from, to, cancellationToken);
+
+    private static async Task<IResult> ListRealMovementsAsync(
+        IDashboardQuery dashboard,
+        CategoryNature nature,
+        DateOnly? from,
+        DateOnly? to,
+        CancellationToken cancellationToken)
+    {
+        if (from > to)
+        {
+            throw new ValidationFailedException(
+                new Dictionary<string, string[]>
+                {
+                    ["from"] = ["The from date cannot be later than the to date."]
+                });
+        }
+
+        var result = await dashboard
+            .ListRealMovementsAsync(nature, from, to, cancellationToken)
+            .ConfigureAwait(false);
+
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> VoidMovementAsync(
