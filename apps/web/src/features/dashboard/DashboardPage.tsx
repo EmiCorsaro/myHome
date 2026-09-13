@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { NewExpenseDialog } from "../expenses/NewExpenseDialog";
+import { NewIncomesDialog } from "../incomes/NewIncomesDialog";
 import { formatMonth, monthKey, shiftMonth } from "../../lib/format";
 import { useDashboard, useGetExpenses, useGetIncomes } from "./useDashboard";
 
@@ -35,7 +36,7 @@ export function DashboardPage() {
   const [month, setMonth] = useState(monthKey);
   const [balance, setBalance] = useState(0);
   const [isAddingExpense, setIsAddingExpense] = useState(false);
-  /*const [isAddingIncomes, setIsAddingIncomes] = useState(false);*/
+  const [isAddingIncomes, setIsAddingIncomes] = useState(false);
 
   const { data, isPending, error } = useDashboard(month);
   const { data: expensesData } = useGetExpenses();
@@ -81,10 +82,10 @@ export function DashboardPage() {
             MyHome
           </div>
           <div className="flex flex-row items-center gap-2 text-slate-500 font-medium text-sm">
-            {/*Next sub-phase. Disabled rather than hidden so the layout does not shift later.
+            {/*Next sub-phase. Disabled rather than hidden so the layout does not shift later.*/}
             <Button variant="default" onClick={() => setIsAddingIncomes(true)}>
               Añadir ingreso
-            </Button>*/}
+            </Button>
             <Button variant="default" onClick={() => setIsAddingExpense(true)}>
               Añadir gasto
             </Button>
@@ -270,6 +271,11 @@ export function DashboardPage() {
       <NewExpenseDialog
         open={isAddingExpense}
         onClose={() => setIsAddingExpense(false)}
+        month={month}
+      />
+      <NewIncomesDialog
+        open={isAddingIncomes}
+        onClose={() => setIsAddingIncomes(false)}
         month={month}
       />
     </div>
