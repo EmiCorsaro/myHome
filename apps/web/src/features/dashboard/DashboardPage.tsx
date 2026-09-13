@@ -14,12 +14,11 @@ import {
   PiggyBank,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
   BarChart3,
   DollarSign,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-/*import { NewExpenseDialog } from "../expenses/NewExpenseDialog";*/
+import { NewExpenseDialog } from "../expenses/NewExpenseDialog";
 import { formatMonth, monthKey, shiftMonth } from "../../lib/format";
 import { useDashboard, useGetExpenses, useGetIncomes } from "./useDashboard";
 
@@ -35,7 +34,8 @@ import { useDashboard, useGetExpenses, useGetIncomes } from "./useDashboard";
 export function DashboardPage() {
   const [month, setMonth] = useState(monthKey);
   const [balance, setBalance] = useState(0);
-  /*const [isAddingExpense, setIsAddingExpense] = useState(false);*/
+  const [isAddingExpense, setIsAddingExpense] = useState(false);
+  /*const [isAddingIncomes, setIsAddingIncomes] = useState(false);*/
 
   const { data, isPending, error } = useDashboard(month);
   const { data: expensesData } = useGetExpenses();
@@ -80,10 +80,14 @@ export function DashboardPage() {
             </span>
             MyHome
           </div>
-          {/* Estado de guardado */}
-          <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-medium border border-emerald-200">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Datos guardados
+          <div className="flex flex-row items-center gap-2 text-slate-500 font-medium text-sm">
+            {/*Next sub-phase. Disabled rather than hidden so the layout does not shift later.
+            <Button variant="default" onClick={() => setIsAddingIncomes(true)}>
+              Añadir ingreso
+            </Button>*/}
+            <Button variant="default" onClick={() => setIsAddingExpense(true)}>
+              Añadir gasto
+            </Button>
           </div>
         </div>
       </div>
@@ -127,13 +131,6 @@ export function DashboardPage() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          {/* Next sub-phase. Disabled rather than hidden so the layout does not shift later.
-                <Button disabled title="Disponible en la próxima etapa">
-                  Añadir ingreso
-                </Button>
-                <Button variant="default" onClick={() => setIsAddingExpense(true)}>
-                  Añadir gasto
-                </Button>*/}
         </div>
 
         {/* 3. TÍTULO DE LA SECCIÓN */}
@@ -270,6 +267,11 @@ export function DashboardPage() {
           </Card>
         </div>
       </div>
+      <NewExpenseDialog
+        open={isAddingExpense}
+        onClose={() => setIsAddingExpense(false)}
+        month={month}
+      />
     </div>
   );
 }

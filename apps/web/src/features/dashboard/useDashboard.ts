@@ -167,3 +167,10 @@ export function useGetIncomes() {
     queryFn: () => apiGet<RegisteredIncome>("/api/incomes"),
   });
 }
+
+export function useGetBalance() {
+  return useQuery({
+    queryKey: ["balance"],
+    queryFn: () => apiGet<number>("/api/balance"),
+  });
+}
