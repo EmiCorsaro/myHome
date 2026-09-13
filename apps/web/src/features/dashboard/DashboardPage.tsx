@@ -5,7 +5,6 @@ import {
   CardHeader,
   CardTitle,
 } from "../../components/ui/card";
-/*import { Progress } from "@/components/ui/progress"*/
 import { Button } from "../../components/ui/button";
 import {
   Building2,
@@ -14,14 +13,19 @@ import {
   PiggyBank,
   ChevronLeft,
   ChevronRight,
-  BarChart3,
   DollarSign,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { NewExpenseDialog } from "../expenses/NewExpenseDialog";
 import { NewIncomesDialog } from "../incomes/NewIncomesDialog";
+import { ExpensesCategoryCard } from "../expenses/ExpensesCategoryCard";
 import { formatMonth, monthKey, shiftMonth } from "../../lib/format";
-import { useDashboard, useGetExpenses, useGetIncomes } from "./useDashboard";
+import {
+  useDashboard,
+  useGetExpenses,
+  useGetIncomes,
+  useGetExpensesCategories,
+} from "./useDashboard";
 
 /**
  * The landing screen: what came in, what went out, where it went, what is left.
@@ -40,6 +44,7 @@ export function DashboardPage() {
 
   const { data, isPending, error } = useDashboard(month);
   const { data: expensesData } = useGetExpenses();
+  const { data: expensesCategoriesData } = useGetExpensesCategories();
   const { data: incomesData } = useGetIncomes();
 
   useEffect(() => {
@@ -206,35 +211,18 @@ export function DashboardPage() {
         </div>
 
         {/* 5. SECCIÓN INFERIOR DE DOS COLUMNAS */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
           {/* Gastos por categoría */}
-          <Card className="md:col-span-2 shadow-sm border-slate-100 bg-white">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-base font-bold text-slate-900">
-                    Gastos por categoría
-                  </CardTitle>
-                  <CardDescription className="text-slate-500 text-xs">
-                    Distribución de los gastos registrados este mes.
-                  </CardDescription>
-                </div>
-                <BarChart3 className="h-6 w-6 text-emerald-600" />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {/*{datosCategorias.map((item) => (
-                <div key={item.nombre} className="space-y-1.5">
-                  <div className="flex justify-between text-sm font-medium text-slate-700">
-                    <span>{item.nombre}</span>
-                    <span>{item.monto.toFixed(2).replace('.', ',')} €</span>
-                  </div>
-                    Barra de progreso de shadcn/ui estilizada en verde esmeralda
-                  <Progress value={item.porcentaje} className="h-2 bg-slate-100 [&>div]:bg-emerald-700" />
-                </div>
-              ))}*/}
-            </CardContent>
-          </Card>
+          <ExpensesCategoryCard
+            expenses={
+              Array.isArray(expensesCategoriesData)
+                ? expensesCategoriesData
+                : expensesCategoriesData
+                  ? [expensesCategoriesData]
+                  : []
+            }
+            totalBudget={expensesData?.amount ? expensesData.amount * -1 : 0}
+          />
 
           {/* Resumen de Ahorro */}
           <Card className="shadow-sm border-slate-100 bg-emerald-50/40 flex flex-col justify-between">

@@ -1,4 +1,5 @@
-import { Button, Dialog, Field, Input, Select } from "@myhome/ui";
+import { Dialog, Field, Input, Select } from "@myhome/ui";
+import { Button } from "../../components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 import { ApiError, type FieldErrors } from "../../api/client";
 import { defaultDateForMonth } from "../../lib/format";
@@ -181,7 +182,7 @@ export function NewIncomesDialog({ open, onClose, month }: NewIncomesDialogProps
     <Dialog
       open={open}
       onClose={onClose}
-      title="Añadir gasto"
+      title="Añadir ingreso"
       description="Se registra en el mes de la fecha que indiques."
       footer={
         <>
@@ -189,17 +190,17 @@ export function NewIncomesDialog({ open, onClose, month }: NewIncomesDialogProps
             Cancelar
           </Button>
           <Button
-            variant="primary"
+            variant="outline"
             type="submit"
-            form="new-expense-form"
+            form="new-income-form"
             disabled={register.isPending || isLoadingOptions}
           >
-            {register.isPending ? "Guardando…" : "Guardar gasto"}
+            {register.isPending ? "Guardando…" : "Guardar ingreso"}
           </Button>
         </>
       }
     >
-      <form id="new-expense-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form id="new-income-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Importe" error={errors["amount"]?.[0]} required>
             <Input
@@ -224,7 +225,7 @@ export function NewIncomesDialog({ open, onClose, month }: NewIncomesDialogProps
           <Input
             value={form.description}
             onChange={(event) => update("description")(event.target.value)}
-            placeholder="Compra semanal"
+            placeholder="Nómina, devolución de impuestos…"
             maxLength={200}
           />
         </Field>
@@ -279,7 +280,7 @@ export function NewIncomesDialog({ open, onClose, month }: NewIncomesDialogProps
           hint={
             form.recurrence === "Once"
               ? undefined
-              : "Se guarda como gasto recurrente. El apunte de este mes se registra igual."
+              : "Se guarda como ingreso recurrente. El apunte de este mes se registra igual."
           }
         >
           <Select

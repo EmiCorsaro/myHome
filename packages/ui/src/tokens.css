@@ -53,6 +53,8 @@
 
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;
+
+  --color-barra-porcentual: oklch(50.8% 0.118 165.612);
 }
 
 @layer base {

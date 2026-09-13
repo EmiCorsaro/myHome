@@ -125,6 +125,11 @@ export interface RegisteredIncome {
   wasAlreadyRegistered: boolean;
 }
 
+export interface ExpenseCategory {
+  category: string;
+  amount: number;
+}
+
 /**
  * Root of the dashboard query keys. Each month caches under its own key below this one, so
  * invalidating the root refreshes every month the user has visited.
@@ -172,5 +177,12 @@ export function useGetBalance() {
   return useQuery({
     queryKey: ["balance"],
     queryFn: () => apiGet<number>("/api/balance"),
+  });
+}
+
+export function useGetExpensesCategories() {
+  return useQuery({
+    queryKey: ["expenses-categories"],
+    queryFn: () => apiGet<ExpenseCategory>("/api/expenses/categories"),
   });
 }

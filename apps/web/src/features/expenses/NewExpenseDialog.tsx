@@ -1,4 +1,5 @@
-import { Button, Dialog, Field, Input, Select } from "@myhome/ui";
+import { Dialog, Field, Input, Select } from "@myhome/ui";
+import { Button } from "../../components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 import { ApiError, type FieldErrors } from "../../api/client";
 import { defaultDateForMonth } from "../../lib/format";
@@ -189,12 +190,12 @@ export function NewExpenseDialog({ open, onClose, month }: NewExpenseDialogProps
             Cancelar
           </Button>
           <Button
-            variant="primary"
+            variant="outline"
             type="submit"
             form="new-expense-form"
             disabled={register.isPending || isLoadingOptions}
           >
-            {register.isPending ? "Guardando…" : "Guardar gasto"}
+            {register.isPending ? "Guardando..." : "Guardar gasto"}
           </Button>
         </>
       }
