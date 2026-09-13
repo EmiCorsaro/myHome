@@ -21,7 +21,7 @@ import {
 import { useState, useEffect } from "react";
 /*import { NewExpenseDialog } from "../expenses/NewExpenseDialog";*/
 import { formatMonth, monthKey, shiftMonth } from "../../lib/format";
-import { useDashboard, useGetExpenses } from "./useDashboard";
+import { useDashboard, useGetExpenses, useGetIncomes } from "./useDashboard";
 
 /**
  * The landing screen: what came in, what went out, where it went, what is left.
@@ -35,11 +35,11 @@ import { useDashboard, useGetExpenses } from "./useDashboard";
 export function DashboardPage() {
   const [month, setMonth] = useState(monthKey);
   const [balance, setBalance] = useState(0);
-  const [income, setIncome] = useState(0);
   /*const [isAddingExpense, setIsAddingExpense] = useState(false);*/
 
   const { data, isPending, error } = useDashboard(month);
   const { data: expensesData } = useGetExpenses();
+  const { data: incomesData } = useGetIncomes();
 
   useEffect(() => {
     fetch("/api/dashboard")
@@ -49,19 +49,6 @@ export function DashboardPage() {
         if (data.accounts && data.accounts.length > 0) {
           const balanceValue = data.accounts[0].balance;
           setBalance(balanceValue);
-        }
-      })
-      .catch((error) => console.error("Error al traer datos:", error));
-  }, []);
-
-  useEffect(() => {
-    fetch("/api/incomes")
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Datos de ingresos:", data);
-        if (data.accounts && data.accounts.length > 0) {
-          const incomeValue = data.accounts[0].income;
-          setIncome(incomeValue);
         }
       })
       .catch((error) => console.error("Error al traer datos:", error));
@@ -177,7 +164,15 @@ export function DashboardPage() {
               <TrendingUp className="h-7 w-7 text-emerald-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-center text-2xl font-bold text-emerald-600">{income} €</div>
+              <div className="text-center text-2xl font-bold text-emerald-600">
+                {(Array.isArray(incomesData)
+                  ? incomesData
+                  : incomesData
+                    ? [incomesData]
+                    : []
+                ).reduce((total, income) => total + income.amount, 0)}{" "}
+                €
+              </div>
             </CardContent>
           </Card>
 
