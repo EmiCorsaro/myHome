@@ -19,8 +19,9 @@ public static class LedgerEndpoints
         app.MapGet("/api/dashboard", GetDashboardAsync)
             .WithName("GetDashboard")
             .WithTags("Dashboard")
-            .WithSummary("Returns the landing screen's figures for one month.")
-            .Produces<DashboardSummary>();
+            .WithSummary("Returns the landing screen's figures for one month, given as year and month.")
+            .Produces<DashboardSummary>()
+            .ProducesValidationProblem();
 
         var ledger = app.MapGroup("/api").WithTags("Ledger");
 
@@ -63,8 +64,6 @@ public static class LedgerEndpoints
             .Produces<AccountSummary>()
             .ProducesValidationProblem();
 
-        // Renaming, changing type, archiving and unarchiving are four independent operations
-        // (story 005): each is refused on its own terms, so each gets its own endpoint.
         ledger.MapPut("/accounts/{accountId:guid}/name", RenameAccountAsync)
             .WithName("RenameAccount")
             .WithSummary("Renames an account.")
@@ -146,10 +145,11 @@ public static class LedgerEndpoints
     private static async Task<IResult> GetDashboardAsync(
         IDashboardQuery dashboard,
         CancellationToken cancellationToken,
-        DateOnly? month = null)
+        string? year = null,
+        string? month = null)
     {
         var summary = await dashboard
-            .GetMonthlySummaryAsync(month, cancellationToken)
+            .GetMonthlySummaryAsync(new DashboardMonthRequest(year, month), cancellationToken)
             .ConfigureAwait(false);
 
         return Results.Ok(summary);

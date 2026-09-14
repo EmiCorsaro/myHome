@@ -15,6 +15,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules.Ledger\Modules.Ledger.csproj" />
+    <!-- Story 062: the dashboard's query parameters are pinned down over real HTTP, through the
+         API's own endpoint mapping and validation error handler. -->
+    <ProjectReference Include="..\..\src\Api\Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -109,7 +109,7 @@
       "spec": "specs/E02-categorias/007-ver-arbol-de-categorias/spec.md",
       "spec_state": "refinada",
       "open_questions": 0,
-      "status": "in_review"
+      "status": "done"
     },
     {
       "id": 8,
@@ -799,6 +799,19 @@
       "spec_state": "refinada",
       "open_questions": 0,
       "status": "pending"
+    },
+    {
+      "id": 62,
+      "story": "062",
+      "name": "062-dashboard-por-mes-y-anio",
+      "title": "Consultar el dashboard indicando mes y año",
+      "epic": "E04 — Saldos y disponible real",
+      "phase": "1.1",
+      "priority": "Medium",
+      "spec": "specs/E04-saldos-y-disponible/062-dashboard-por-mes-y-anio/spec.md",
+      "spec_state": "refinada",
+      "open_questions": 0,
+      "status": "done"
     }
   ]
 }
