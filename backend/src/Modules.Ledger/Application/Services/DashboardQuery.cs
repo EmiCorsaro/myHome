@@ -1,8 +1,10 @@
+using FluentValidation;
 using MyHome.Modules.Ledger.Contracts.Accounts;
 using MyHome.Modules.Ledger.Contracts.Dashboard;
 using MyHome.Modules.Ledger.Domain;
 using MyHome.Modules.Ledger.Persistence;
 using MyHome.Modules.Shared.Application;
+using MyHome.Modules.Shared.Contracts;
 using MyHome.Modules.Shared.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,9 +13,38 @@ namespace MyHome.Modules.Ledger.Application;
 internal sealed class DashboardQuery(
     LedgerDbContext db,
     ITenantContext tenant,
-    IHouseholdDirectory households) : IDashboardQuery
+    IHouseholdDirectory households,
+    IValidator<DashboardMonthRequest> monthValidator,
+    TimeProvider clock) : IDashboardQuery
 {
     private const int MaxMovements = 200;
+
+    /// <remarks>
+    /// Validates the raw year and month and then delegates to the date-based calculation, so a
+    /// month asked for by year and month answers exactly what any day of it used to (RF-7).
+    /// </remarks>
+    public async Task<DashboardSummary> GetMonthlySummaryAsync(
+        DashboardMonthRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var validation = await monthValidator.ValidateAsync(request, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!validation.IsValid)
+        {
+            throw new ValidationFailedException(
+                validation.Errors
+                    .GroupBy(e => ToFieldName(e.PropertyName))
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray()));
+        }
+
+        return await GetMonthlySummaryAsync(
+                DashboardMonthRequestValidator.FirstDayOf(request),
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
 
     public async Task<DashboardSummary> GetMonthlySummaryAsync(
         DateOnly? reference = null,
@@ -232,8 +263,13 @@ internal sealed class DashboardQuery(
         return lines;
     }
 
-    private static DateOnly TodayIn(string timeZoneId) =>
-        HouseholdClock.TodayIn(timeZoneId, TimeProvider.System);
+    private DateOnly TodayIn(string timeZoneId) =>
+        HouseholdClock.TodayIn(timeZoneId, clock);
+
+    private static string ToFieldName(string propertyName) =>
+        string.IsNullOrEmpty(propertyName)
+            ? propertyName
+            : char.ToLowerInvariant(propertyName[0]) + propertyName[1..];
 
     private static decimal Round(decimal value) =>
         decimal.Round(value, 2, MidpointRounding.ToEven);

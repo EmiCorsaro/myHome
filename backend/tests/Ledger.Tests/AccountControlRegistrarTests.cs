@@ -273,7 +273,9 @@ public sealed class AccountControlRegistrarTests : IDisposable
         new(
             _database.Context,
             new TestTenantContext(HouseholdId),
-            new TestHouseholdDirectory(CurrencyCode.Euro));
+            new TestHouseholdDirectory(CurrencyCode.Euro),
+            new DashboardMonthRequestValidator(),
+            TimeProvider.System);
 
     private async Task<Account> Existing(
         string name,

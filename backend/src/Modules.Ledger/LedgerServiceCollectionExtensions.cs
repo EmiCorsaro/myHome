@@ -3,6 +3,7 @@ using MyHome.Modules.Ledger.Application;
 using MyHome.Modules.Ledger.Contracts.Accounts;
 using MyHome.Modules.Ledger.Contracts.Budget;
 using MyHome.Modules.Ledger.Contracts.Categories;
+using MyHome.Modules.Ledger.Contracts.Dashboard;
 using MyHome.Modules.Ledger.Contracts.Expenses;
 using MyHome.Modules.Ledger.Contracts.Incomes;
 using MyHome.Modules.Ledger.Contracts.Transfers;
@@ -60,6 +61,7 @@ public static class LedgerServiceCollectionExtensions
         services.AddScoped<IValidator<RegisterTransferRequest>, RegisterTransferRequestValidator>();
         services.AddScoped<IValidator<CreateCategoryRequest>, CreateCategoryRequestValidator>();
         services.AddScoped<IValidator<DeclareBudgetLineRequest>, DeclareBudgetLineRequestValidator>();
+        services.AddScoped<IValidator<DashboardMonthRequest>, DashboardMonthRequestValidator>();
 
         return services;
     }

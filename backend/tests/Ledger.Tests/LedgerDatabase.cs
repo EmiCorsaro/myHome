@@ -159,6 +159,16 @@ internal sealed class TestTenantContext(int householdId, int? memberId = null) :
 }
 
 /// <summary>
+/// Madrid's time zone under an id this platform resolves. With invariant globalization, Windows
+/// does not translate IANA ids, so a household on "Europe/Madrid" silently falls back to UTC there.
+/// </summary>
+internal static class TestTimeZones
+{
+    public static string Madrid =>
+        OperatingSystem.IsWindows() ? "Romance Standard Time" : "Europe/Madrid";
+}
+
+/// <summary>
 /// The shared module's answer about the current household, without a shared database behind it.
 /// </summary>
 /// <param name="currency">Currency the household keeps its books in.</param>
@@ -167,9 +177,11 @@ internal sealed class TestTenantContext(int householdId, int? memberId = null) :
 /// reported as belonging to a different household, which is the fixture's default: a test asks
 /// for it explicitly only when it needs a member to resolve successfully.
 /// </param>
+/// <param name="timeZoneId">Time zone the household lives in; Madrid's IANA id by default.</param>
 internal sealed class TestHouseholdDirectory(
     CurrencyCode currency,
-    IReadOnlyDictionary<Guid, int>? resolvableMembers = null) : IHouseholdDirectory
+    IReadOnlyDictionary<Guid, int>? resolvableMembers = null,
+    string timeZoneId = "Europe/Madrid") : IHouseholdDirectory
 {
     public Task<HouseholdSummary?> GetCurrentAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<HouseholdSummary?>(
@@ -177,7 +189,7 @@ internal sealed class TestHouseholdDirectory(
                 Guid.CreateVersion7(),
                 "Casa",
                 currency.Value,
-                "Europe/Madrid",
+                timeZoneId,
                 []));
 
     public Task<int?> ResolveMemberAsync(
