@@ -107,9 +107,9 @@
       "phase": "1.1",
       "priority": "High",
       "spec": "specs/E02-categorias/007-ver-arbol-de-categorias/spec.md",
-      "spec_state": "borrador",
-      "open_questions": 1,
-      "status": "pending"
+      "spec_state": "refinada",
+      "open_questions": 0,
+      "status": "in_review"
     },
     {
       "id": 8,
