@@ -5,17 +5,17 @@ import { ApiError, type FieldErrors } from "../../api/client";
 import { defaultDateForMonth } from "../../lib/format";
 import {
   useAccounts,
-  useExpenseCategories,
-  useRegisterExpense,
+  useIncomeCategories,
+  useRegisterIncome,
   type CategorySummary,
-  type ExpenseRecurrence,
-} from "./useExpenses";
+  type IncomesRecurrence,
+} from "./useIncomes";
 
-/** Props for {@link NewExpenseDialog}. */
-export interface NewExpenseDialogProps {
+/** Props for {@link NewIncomesDialog}. */
+export interface NewIncomesDialogProps {
   /** Whether the dialog is open. */
   open: boolean;
-  /** Called when the dialog should close, whether the expense was saved or not. */
+  /** Called when the dialog should close, whether the income was saved or not. */
   onClose: () => void;
   /** Month currently on screen, as `YYYY-MM-01`. The date field defaults inside it. */
   month: string;
@@ -28,11 +28,11 @@ interface FormState {
   amount: string;
   occurredOn: string;
   description: string;
-  recurrence: ExpenseRecurrence;
+  recurrence: IncomesRecurrence;
 }
 
 /** Recurrence options, in the order they are offered. */
-const RECURRENCE_OPTIONS: readonly { value: ExpenseRecurrence; label: string }[] = [
+const RECURRENCE_OPTIONS: readonly { value: IncomesRecurrence; label: string }[] = [
   { value: "Once", label: "Puntual" },
   { value: "Monthly", label: "Mensual" },
   { value: "BiMonthly", label: "Bimestral" },
@@ -84,23 +84,23 @@ function groupCategories(categories: readonly CategorySummary[]): CategoryGroup[
 }
 
 /**
- * The form for recording an expense. Three things here are worth copying into the forms that come
+ * The form for recording an income. Three things here are worth copying into the forms that come
  * after it:
  *
  * - Errors come from the API, not from a second set of rules written in the client. Duplicating
  *   the validation is how the two slowly stop agreeing.
  * - The idempotency key is generated once per opening, so saving twice after a timeout cannot
- *   record the expense twice.
+ *   record the income twice.
  * - Nothing is recalculated on success: the mutation invalidates the dashboard and the figures
  *   refresh themselves.
  *
- * @param props - See {@link NewExpenseDialogProps}.
+ * @param props - See {@link NewIncomesDialogProps}.
  * @returns The dialog with the form.
  */
-export function NewExpenseDialog({ open, onClose, month }: NewExpenseDialogProps) {
+export function NewIncomesDialog({ open, onClose, month }: NewIncomesDialogProps) {
   const accounts = useAccounts();
-  const categories = useExpenseCategories();
-  const register = useRegisterExpense();
+  const categories = useIncomeCategories();
+  const register = useRegisterIncome();
 
   const emptyForm = useMemo<FormState>(
     () => ({
@@ -120,7 +120,7 @@ export function NewExpenseDialog({ open, onClose, month }: NewExpenseDialogProps
 
   const groups = useMemo(() => groupCategories(categories.data ?? []), [categories.data]);
 
-  // Each opening is a new expense: fresh fields, no stale errors, and a new idempotency key so it
+  // Each opening is a new income: fresh fields, no stale errors, and a new idempotency key so it
   // is not mistaken for a retry of the previous one.
   useEffect(() => {
     if (open) {
@@ -182,7 +182,7 @@ export function NewExpenseDialog({ open, onClose, month }: NewExpenseDialogProps
     <Dialog
       open={open}
       onClose={onClose}
-      title="Añadir gasto"
+      title="Añadir ingreso"
       description="Se registra en el mes de la fecha que indiques."
       footer={
         <>
@@ -192,15 +192,15 @@ export function NewExpenseDialog({ open, onClose, month }: NewExpenseDialogProps
           <Button
             variant="outline"
             type="submit"
-            form="new-expense-form"
+            form="new-income-form"
             disabled={register.isPending || isLoadingOptions}
           >
-            {register.isPending ? "Guardando..." : "Guardar gasto"}
+            {register.isPending ? "Guardando…" : "Guardar ingreso"}
           </Button>
         </>
       }
     >
-      <form id="new-expense-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form id="new-income-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Importe" error={errors["amount"]?.[0]} required>
             <Input
@@ -225,7 +225,7 @@ export function NewExpenseDialog({ open, onClose, month }: NewExpenseDialogProps
           <Input
             value={form.description}
             onChange={(event) => update("description")(event.target.value)}
-            placeholder="Compra semanal"
+            placeholder="Nómina, devolución de impuestos…"
             maxLength={200}
           />
         </Field>
@@ -280,7 +280,7 @@ export function NewExpenseDialog({ open, onClose, month }: NewExpenseDialogProps
           hint={
             form.recurrence === "Once"
               ? undefined
-              : "Se guarda como gasto recurrente. El apunte de este mes se registra igual."
+              : "Se guarda como ingreso recurrente. El apunte de este mes se registra igual."
           }
         >
           <Select

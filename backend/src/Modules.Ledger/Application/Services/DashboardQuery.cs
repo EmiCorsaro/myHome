@@ -1,4 +1,5 @@
 using MyHome.Modules.Ledger.Contracts.Accounts;
+using MyHome.Modules.Ledger.Contracts.Categories;
 using MyHome.Modules.Ledger.Contracts.Dashboard;
 using MyHome.Modules.Ledger.Domain;
 using MyHome.Modules.Ledger.Persistence;
@@ -73,6 +74,8 @@ internal sealed class DashboardQuery(
                 end,
                 accounts,
                 categories,
+            kind: null,
+            maxMovements: MaxMovements,
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -89,6 +92,41 @@ internal sealed class DashboardQuery(
             byCategory,
             realAccounts,
             monthMovements);
+    }
+
+    public async Task<IReadOnlyList<LedgerEntrySummary>> ListRealMovementsAsync(
+        CategoryNature nature,
+        DateOnly? from = null,
+        DateOnly? upperBound = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (from > upperBound)
+        {
+            throw new ArgumentException(
+                "The lower date bound cannot be later than the upper date bound.");
+        }
+
+        var householdId = tenant.RequireHouseholdId();
+        var accounts = await db.Accounts
+            .Where(a => a.HouseholdId == householdId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var kind = nature == CategoryNature.Income ? CategoryKind.Income : CategoryKind.Expense;
+        var categories = await db.Categories
+            .Where(c => c.HouseholdId == householdId && c.Kind == kind)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return await MovementsAsync(
+                householdId,
+                from,
+                upperBound,
+                accounts,
+                categories,
+                kind,
+                maxMovements: null,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <summary>
@@ -180,19 +218,29 @@ internal sealed class DashboardQuery(
 
     private async Task<List<LedgerEntrySummary>> MovementsAsync(
         int householdId,
-        DateOnly start,
-        DateOnly end,
+        DateOnly? start,
+        DateOnly? end,
         List<Account> accounts,
         List<Category> categories,
+        CategoryKind? kind,
+        int? maxMovements,
         CancellationToken cancellationToken)
     {
-        var entries = await db.Entries
+        IQueryable<JournalEntry> query = db.Entries
             .Where(e => e.HouseholdId == householdId
-                && e.OccurredOn >= start
-                && e.OccurredOn <= end)
+                && (start == null || e.OccurredOn >= start)
+                && (end == null || e.OccurredOn <= end)
+                && !e.IsVoided
+                && e.ReversalOfEntryId == null)
             .OrderByDescending(e => e.OccurredOn)
-            .ThenByDescending(e => e.CreatedAt)
-            .Take(MaxMovements)
+            .ThenByDescending(e => e.CreatedAt);
+
+        if (maxMovements is not null)
+        {
+            query = query.Take(maxMovements.Value);
+        }
+
+        var entries = await query
             .Include(e => e.Postings)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -216,6 +264,11 @@ internal sealed class DashboardQuery(
             var category = classified?.CategoryId is { } id
                 ? categoriesById.GetValueOrDefault(id)
                 : null;
+
+            if (kind is not null && category?.Kind != kind)
+            {
+                continue;
+            }
 
             lines.Add(new LedgerEntrySummary(
                 entry.PublicId,

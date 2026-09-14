@@ -6,17 +6,8 @@
     "one_story_at_a_time": true,
     "require_refined_spec_to_implement": true,
     "require_green_tree_to_close": true,
-    "valid_status": [
-      "pending",
-      "in_progress",
-      "in_review",
-      "done",
-      "blocked"
-    ],
-    "valid_spec_state": [
-      "borrador",
-      "refinada"
-    ],
+    "valid_status": ["pending", "in_progress", "in_review", "done", "blocked"],
+    "valid_spec_state": ["borrador", "refinada"],
     "implementable_when": "spec_state == \"refinada\" && open_questions == 0"
   },
   "features": [
@@ -799,6 +790,19 @@
       "spec_state": "refinada",
       "open_questions": 0,
       "status": "pending"
+    },
+    {
+      "id": 61,
+      "story": "061",
+      "name": "061-listar-movimientos-reales",
+      "title": "Listar movimientos reales",
+      "epic": "E03 — Registro de movimientos",
+      "phase": "1.1",
+      "priority": "High",
+      "spec": "specs/E03-registro-de-movimientos/061-listar-movimientos-reales/spec.md",
+      "spec_state": "refinada",
+      "open_questions": 0,
+      "status": "in_review"
     }
   ]
 }

@@ -1,4 +1,5 @@
 import tailwindcss from "@tailwindcss/vite";
+import path from "path";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
 
@@ -32,6 +33,11 @@ export default defineConfig(({ mode, command }) => {
       // together.
       proxy: {
         "/api": { target: apiUrl ?? "", changeOrigin: true },
+      },
+      resolve: {
+        alias: {
+          "@": path.resolve(__dirname, "./src"),
+        },
       },
     },
     optimizeDeps: {

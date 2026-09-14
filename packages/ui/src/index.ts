@@ -5,7 +5,7 @@
  * can move without notice.
  */
 
-export { Button, type ButtonProps, type ButtonVariant } from "./components/Button";
+export { Button, type ButtonProps, type ButtonVariant } from "./components/Button2";
 export { Card, type CardProps } from "./components/Card";
 export {
   CategoryBreakdown,

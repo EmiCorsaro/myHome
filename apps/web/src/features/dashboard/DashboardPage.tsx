@@ -1,20 +1,31 @@
 import {
-  Button,
   Card,
-  CategoryBreakdown,
-  DataTable,
-  EmptyState,
-  Money,
-  Section,
-  StatCard,
-  categoryTone,
-  cn,
-  type Column,
-} from "@myhome/ui";
-import { useState } from "react";
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import {
+  Building2,
+  TrendingUp,
+  TrendingDown,
+  PiggyBank,
+  ChevronLeft,
+  ChevronRight,
+  DollarSign,
+} from "lucide-react";
+import { useState, useEffect } from "react";
 import { NewExpenseDialog } from "../expenses/NewExpenseDialog";
-import { formatMonth, formatShortDate, monthKey, shiftMonth } from "../../lib/format";
-import { useDashboard, type AccountSummary, type LedgerEntrySummary } from "./useDashboard";
+import { NewIncomesDialog } from "../incomes/NewIncomesDialog";
+import { ExpensesCategoryCard } from "../expenses/ExpensesCategoryCard";
+import { formatMonth, monthKey, shiftMonth } from "../../lib/format";
+import {
+  useDashboard,
+  useGetExpenses,
+  useGetIncomes,
+  useGetExpensesCategories,
+} from "./useDashboard";
 
 /**
  * The landing screen: what came in, what went out, where it went, what is left.
@@ -27,10 +38,27 @@ import { useDashboard, type AccountSummary, type LedgerEntrySummary } from "./us
  */
 export function DashboardPage() {
   const [month, setMonth] = useState(monthKey);
+  const [balance, setBalance] = useState(0);
   const [isAddingExpense, setIsAddingExpense] = useState(false);
+  const [isAddingIncomes, setIsAddingIncomes] = useState(false);
 
   const { data, isPending, error } = useDashboard(month);
-  const isCurrentMonth = month === monthKey();
+  const { data: expensesData } = useGetExpenses();
+  const { data: expensesCategoriesData } = useGetExpensesCategories();
+  const { data: incomesData } = useGetIncomes();
+
+  useEffect(() => {
+    fetch("/api/dashboard")
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Datos del panel:", data);
+        if (data.accounts && data.accounts.length > 0) {
+          const balanceValue = data.accounts[0].balance;
+          setBalance(balanceValue);
+        }
+      })
+      .catch((error) => console.error("Error al traer datos:", error));
+  }, []);
 
   if (isPending) {
     return <p className="text-sm text-ink-soft">Cargando el panel…</p>;
@@ -45,148 +73,205 @@ export function DashboardPage() {
     );
   }
 
-  const hasExpenses = data.byCategory.length > 0;
+  /*const hasExpenses = data.byCategory.length > 0;*/
 
   return (
-    <div className="flex flex-col gap-8">
-      <Section
-        title={capitalise(formatMonth(data.periodStart))}
-        description={isCurrentMonth ? "Mes en curso" : "Estás viendo otro mes"}
-        actions={
-          <>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                aria-label="Mes anterior"
-                onClick={() => setMonth(shiftMonth(month, -1))}
-              >
-                ‹
-              </Button>
-              <Button
-                variant="ghost"
-                aria-label="Mes siguiente"
-                onClick={() => setMonth(shiftMonth(month, 1))}
-              >
-                ›
-              </Button>
-              {isCurrentMonth ? null : (
-                <Button variant="ghost" onClick={() => setMonth(monthKey())}>
-                  Hoy
-                </Button>
-              )}
-            </div>
-
-            {/* Next sub-phase. Disabled rather than hidden so the layout does not shift later. */}
-            <Button disabled title="Disponible en la próxima etapa">
+    <div className="min-h-screen bg-slate-50/50 p-6 md:p-10 text-slate-800">
+      {/* 1. TOP BAR / NAVBAR SUPERIOR */}
+      <div className="max-w-7xl mx-auto flex-row md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-200 mb-8 gap-4">
+        <div className="flex flex-row gap-1 justify-between">
+          <div className="flex flex-row items-center gap-2 text-indigo-900 font-bold text-2xl">
+            <span className="p-1.5 bg-emerald-600 rounded-lg text-white">
+              <Building2 className="h-5 w-5" />
+            </span>
+            MyHome
+          </div>
+          <div className="flex flex-row items-center gap-2 text-slate-500 font-medium text-sm">
+            {/*Next sub-phase. Disabled rather than hidden so the layout does not shift later.*/}
+            <Button variant="default" onClick={() => setIsAddingIncomes(true)}>
               Añadir ingreso
             </Button>
-            <Button variant="primary" onClick={() => setIsAddingExpense(true)}>
+            <Button variant="default" onClick={() => setIsAddingExpense(true)}>
               Añadir gasto
             </Button>
-          </>
-        }
-      >
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            label="Ingresos"
-            value={data.income}
-            currency={data.currency}
-            hint="Cobrado en el mes"
-          />
-          <StatCard
-            label="Gastos"
-            value={data.expense}
-            currency={data.currency}
-            hint="Registrado en el mes"
-          />
-          <StatCard
-            label="Diferencia"
-            value={data.net}
-            currency={data.currency}
-            colorize
-            hint="Ingresos menos gastos"
-          />
-          <StatCard
-            label="Saldo hoy"
-            value={data.trackedBalance}
-            currency={data.currency}
-            // Not a figure for the month on screen: this is the balance right now.
-            hint="Cuentas incluidas en la proyección"
-          />
+          </div>
         </div>
-      </Section>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Section title="Gastos por categoría" description="Dónde se fue el dinero este mes">
-          <Card>
-            {hasExpenses ? (
-              <CategoryBreakdown
-                items={data.byCategory.map((category) => ({
-                  id: category.categoryId,
-                  name: category.name,
-                  colorIndex: category.colorIndex,
-                  total: category.total,
-                  share: category.share,
-                }))}
-                currency={data.currency}
-              />
-            ) : (
-              <EmptyState
-                title="Aún no hay gastos en este mes"
-                description="En cuanto registres el primero, aparecerá aquí el reparto por categoría."
-                action={
-                  <Button variant="primary" onClick={() => setIsAddingExpense(true)}>
-                    Añadir gasto
-                  </Button>
-                }
-              />
-            )}
-          </Card>
-        </Section>
-
-        <Section title="Proyección de ahorro" description="Hacia dónde va el saldo">
-          <Card className="h-full">
-            <ProjectionPlaceholder
-              isAvailable={data.isProjectionAvailable}
-              net={data.net}
-              currency={data.currency}
-            />
-          </Card>
-        </Section>
       </div>
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* 2. SUB-NAV / PESTAÑAS Y NAVEGACIÓN POR MES */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-6 border-b border-slate-200 w-full sm:w-auto">
+            <button className="text-emerald-700 font-semibold border-b-2 border-emerald-700 pb-2 text-sm px-1">
+              <a href="/DashboardPage">Resumen</a>
+            </button>
+            <button className="text-slate-500 font-medium hover:text-slate-800 pb-2 text-sm px-1">
+              <a href="/Transactions">Transacciones</a>
+            </button>
+            <button className="text-slate-500 font-medium hover:text-slate-800 pb-2 text-sm px-1">
+              <a href="/Budgets">Presupuestos</a>
+            </button>
+          </div>
 
-      <Section title="Cuentas" description="Saldo actual de cada una">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {data.accounts.map((account) => (
-            <AccountCard key={account.id} account={account} />
-          ))}
+          {/* Selector de Fecha */}
+          <div
+            className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm"
+            title={capitalise(formatMonth(data.periodStart))}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Mes anterior"
+              className="h-8 w-8 text-slate-500"
+              onClick={() => setMonth(shiftMonth(month, -1))}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span> {capitalise(formatMonth(data.periodStart))} </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Mes siguiente"
+              className="h-8 w-8 text-slate-500"
+              onClick={() => setMonth(shiftMonth(month, 1))}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </Section>
 
-      <Section title="Movimientos del mes" description="Lo registrado en el mes que estás viendo">
-        <DataTable
-          columns={MOVEMENT_COLUMNS}
-          rows={data.recentEntries}
-          getRowKey={(entry) => entry.id}
-          empty={
-            <EmptyState
-              title="Todavía no hay movimientos"
-              description="Registra un gasto y lo verás aquí al instante."
-            />
-          }
-        />
-      </Section>
+        {/* 3. TÍTULO DE LA SECCIÓN */}
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Panorama mensual</h2>
+          <p className="text-slate-500 text-sm">
+            Tus movimientos del mes, reunidos en una sola vista.
+          </p>
+        </div>
 
+        {/* 4. GRID DE TARJETAS DE MÉTRICAS */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Saldo Disponible */}
+          <Card className="shadow-sm border-slate-100 bg-white">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium text-slate-500">Saldo disponible</CardTitle>
+              <Building2 className="h-7 w-7 text-emerald-600 bg-emerald-50 rounded p-0.5" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-center text-2xl font-bold text-slate-900">{balance} €</div>
+            </CardContent>
+          </Card>
+
+          {/* Ingresos */}
+          <Card className="shadow-sm border-slate-100 bg-white">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium text-slate-500">Ingresos del mes</CardTitle>
+              <TrendingUp className="h-7 w-7 text-emerald-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-center text-2xl font-bold text-emerald-600">
+                {(Array.isArray(incomesData)
+                  ? incomesData
+                  : incomesData
+                    ? [incomesData]
+                    : []
+                ).reduce((total, income) => total + income.amount, 0)}{" "}
+                €
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Gastos */}
+          <Card className="shadow-sm border-slate-100 bg-white">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium text-slate-500">Gastos del mes</CardTitle>
+              <TrendingDown className="h-7 w-7 text-rose-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-center text-2xl font-bold text-rose-600">
+                {(Array.isArray(expensesData)
+                  ? expensesData
+                  : expensesData
+                    ? [expensesData]
+                    : []
+                ).reduce((total, expense) => total + expense.amount * -1, 0)}{" "}
+                €
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Ahorro */}
+          <Card className="shadow-sm border-slate-100 bg-white">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium text-slate-500">Ahorro del mes</CardTitle>
+              <PiggyBank className="h-7 w-7 text-indigo-900" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-center text-2xl font-bold text-indigo-900">0 €</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 5. SECCIÓN INFERIOR DE DOS COLUMNAS */}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
+          {/* Gastos por categoría */}
+          <ExpensesCategoryCard
+            expenses={
+              Array.isArray(expensesCategoriesData)
+                ? expensesCategoriesData
+                : expensesCategoriesData
+                  ? [expensesCategoriesData]
+                  : []
+            }
+            totalBudget={expensesData?.amount ? expensesData.amount * -1 : 0}
+          />
+
+          {/* Resumen de Ahorro */}
+          <Card className="shadow-sm border-slate-100 bg-emerald-50/40 flex flex-col justify-between">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-base font-bold text-slate-900">
+                  Resumen de ahorro
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-emerald-600 border border-emerald-200 rounded-full bg-white p-0.5" />
+              </div>
+              <CardDescription className="text-slate-500 text-xs pt-1">
+                El ahorro representa la diferencia entre los ingresos y los gastos de este mes.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-6 pt-4">
+              <div className="bg-white border border-emerald-100 p-4 rounded-xl shadow-xs">
+                <span className="text-xs text-slate-500 font-medium block mb-1">
+                  Tasa de ahorro mensual
+                </span>
+                <span className="text-3xl font-extrabold text-slate-800">11%</span>
+              </div>
+
+              <Button
+                variant="link"
+                className="text-emerald-700 font-semibold p-0 flex items-center gap-1 hover:no-underline"
+              >
+                Ver presupuestos <ChevronRight className="h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
       <NewExpenseDialog
         open={isAddingExpense}
         onClose={() => setIsAddingExpense(false)}
+        month={month}
+      />
+      <NewIncomesDialog
+        open={isAddingIncomes}
+        onClose={() => setIsAddingIncomes(false)}
         month={month}
       />
     </div>
   );
 }
 
-/** Columns of the movements table. Outside the component so they are built once. */
+{
+  /* Columns of the movements table. Outside the component so they are built once.
 const MOVEMENT_COLUMNS: readonly Column<LedgerEntrySummary>[] = [
   {
     key: "date",
@@ -238,84 +323,37 @@ const MOVEMENT_COLUMNS: readonly Column<LedgerEntrySummary>[] = [
     align: "end",
     render: (entry) => <Money value={entry.amount} />,
   },
-];
-
-/**
- * One account with its balance, and a warning when it is under its floor.
- *
- * @param props - The account to show.
- * @param props.account - Account data as published by the API.
- * @returns The card.
- */
-function AccountCard({ account }: { account: AccountSummary }) {
-  const isBelowBuffer =
-    account.minimumBufferTarget !== null && account.balance < account.minimumBufferTarget;
-
-  return (
-    <Card className="flex flex-col gap-1">
-      <span className="truncate text-sm font-medium text-ink-soft">{account.name}</span>
-      <Money
-        value={account.balance}
-        currency={account.currency}
-        colorize={false}
-        className="text-xl font-semibold"
-      />
-      {isBelowBuffer ? (
-        // The one colour on this screen that is a warning and not decoration.
-        <span className="text-xs font-medium text-caution">Por debajo del colchón previsto</span>
-      ) : (
-        <span className="text-xs text-ink-faint">
-          {account.isTracked ? "En la proyección" : "Fuera de la proyección"}
-        </span>
-      )}
-    </Card>
-  );
+];*/
 }
 
-/**
- * The projection card while there is nothing to project from.
- *
- * @param props - What is known so far.
- * @param props.isAvailable - Whether the API can compute a projection yet.
- * @param props.net - Income minus expense for the month on screen.
- * @param props.currency - Base currency.
- * @returns The card's content.
- *
- * @remarks
- * Says what is missing instead of extrapolating one month into a curve. A forecast built from a
- * handful of manual entries looks like an answer without being one, and this screen is only worth
- * anything if it can be believed when it says the money will not stretch.
- */
-function ProjectionPlaceholder({
-  isAvailable,
-  net,
-  currency,
-}: {
-  isAvailable: boolean;
-  net: number;
-  currency: string;
-}) {
-  if (isAvailable) {
-    return null;
-  }
+{
+  /*
+   * One account with its balance, and a warning when it is under its floor.
+   *
+   * @param props - The account to show.
+   * @param props.account - Account data as published by the API.
+   * @returns The card.
+   *
+   * @remarks
+   * This card is used to display information about a single account and its current balance.
+   */
+}
 
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <span className="text-sm text-ink-soft">Ritmo de este mes</span>
-        <Money value={net} currency={currency} className="text-2xl font-semibold" />
-        <p className="text-xs text-ink-faint">
-          Diferencia entre lo cobrado y lo gastado hasta ahora.
-        </p>
-      </div>
-
-      <p className="rounded-control bg-surface-sunken px-3 py-2 text-sm text-ink-soft">
-        La proyección de saldo llega cuando estén cargados los ingresos y gastos recurrentes. Con
-        una sola cifra de un mes no se puede anticipar el valle del saldo, que es lo que importa
-        saber.
-      </p>
-    </div>
-  );
+{
+  /**
+   * The projection card while there is nothing to project from.
+   *
+   * @param props - What is known so far.
+   * @param props.isAvailable - Whether the API can compute a projection yet.
+   * @param props.net - Income minus expense for the month on screen.
+   * @param props.currency - Base currency.
+   * @returns The card's content.
+   *
+   * @remarks
+   * Says what is missing instead of extrapolating one month into a curve. A forecast built from a
+   * handful of manual entries looks like an answer without being one, and this screen is only worth
+   * anything if it can be believed when it says the money will not stretch.
+   */
 }
 
 /**
