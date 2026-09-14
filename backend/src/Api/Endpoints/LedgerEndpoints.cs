@@ -95,14 +95,17 @@ public static class LedgerEndpoints
             .WithSummary("Lists the expense categories.")
             .Produces<IReadOnlyList<CategorySummary>>();
 
+        ledger.MapGet("/categories/income", GetIncomeCategoriesAsync)
+            .WithName("GetIncomeCategories")
+            .WithSummary("Lists the income categories.")
+            .Produces<IReadOnlyList<CategorySummary>>();
+
         ledger.MapPost("/categories", CreateCategoryAsync)
             .WithName("CreateCategory")
             .WithSummary("Creates a category.")
             .Produces<CategorySummary>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
-        // The budget of a month is read whole — its lines and the total they commit — because the
-        // total is the figure the household decides with and it is not the screen's job to add up.
         ledger.MapGet("/budget", GetMonthBudgetAsync)
             .WithName("GetMonthBudget")
             .WithSummary("Lists the budget lines of one month with what they commit and expect.")
@@ -144,8 +147,6 @@ public static class LedgerEndpoints
             .Produces<RegisteredTransfer>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
-        // One mechanism for the three kinds of movement (story 013, RF-10): the household names
-        // the movement, not the kind it is, and the registrar figures the rest out on its own.
         ledger.MapPost("/movements/{movementId:guid}/void", VoidMovementAsync)
             .WithName("VoidMovement")
             .WithSummary("Reverses a movement, leaving the balances it touched as they were before it.")
@@ -294,10 +295,23 @@ public static class LedgerEndpoints
 
     private static async Task<IResult> GetExpenseCategoriesAsync(
         ICategoryDirectory categories,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool includeArchived = false)
     {
         var result = await categories
-            .ListExpenseCategoriesAsync(cancellationToken)
+            .ListExpenseCategoriesAsync(includeArchived, cancellationToken)
+            .ConfigureAwait(false);
+
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> GetIncomeCategoriesAsync(
+        ICategoryDirectory categories,
+        CancellationToken cancellationToken,
+        bool includeArchived = false)
+    {
+        var result = await categories
+            .ListIncomeCategoriesAsync(includeArchived, cancellationToken)
             .ConfigureAwait(false);
 
         return Results.Ok(result);
